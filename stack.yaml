@@ -42,6 +42,7 @@ packages:
 # - propagators/b3
 - propagators/datadog
 # - propagators/jaeger
+- propagators/datadog
 - propagators/w3c
 - instrumentation/conduit
 - instrumentation/cloudflare
