@@ -41,6 +41,7 @@ packages:
 # - exporters/prometheus
 # - propagators/b3
 # - propagators/jaeger
+- propagators/datadog
 - propagators/w3c
 - instrumentation/conduit
 - instrumentation/cloudflare

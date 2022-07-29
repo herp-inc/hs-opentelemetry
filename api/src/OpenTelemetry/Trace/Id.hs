@@ -21,7 +21,7 @@
 -----------------------------------------------------------------------------
 module OpenTelemetry.Trace.Id 
   ( -- * Working with 'TraceId's
-    TraceId
+    TraceId (TraceId)
     -- ** Creating 'TraceId's
   , newTraceId
     -- ** Checking 'TraceId's for validity
@@ -35,7 +35,7 @@ module OpenTelemetry.Trace.Id
   , traceIdBaseEncodedByteString
   , traceIdBaseEncodedText
     -- * Working with 'SpanId's
-  , SpanId
+  , SpanId (SpanId)
     -- ** Creating 'SpanId's
   , newSpanId
     -- ** Checking 'SpanId's for validity

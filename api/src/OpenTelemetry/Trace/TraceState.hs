@@ -17,7 +17,7 @@
 --
 -----------------------------------------------------------------------------
 module OpenTelemetry.Trace.TraceState 
-  ( TraceState
+  ( TraceState (..)
   , Key(..)
   , Value(..)
   , empty
