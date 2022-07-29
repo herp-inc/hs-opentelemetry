@@ -148,7 +148,7 @@ instance KnownSymbol s => MaterializeResource ('Just s) where
 data MaterializedResources = MaterializedResources
   { materializedResourcesSchema :: Maybe String
   , materializedResourcesAttributes :: Attributes
-  }
+  } deriving Show
 
 -- | A placeholder for 'MaterializedResources' when no resource information is
 -- available, needed, or required.

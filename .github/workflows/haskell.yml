@@ -12,7 +12,7 @@ jobs:
           # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
           stack-version: 'latest'
-      - uses: cachix/install-nix-action@v15
+      - uses: cachix/install-nix-action@v17
       - uses: actions/cache@v2
         with:
           path: |
@@ -22,7 +22,6 @@ jobs:
           restore-keys: |
             stack-${{ runner.os }}
       # 9.2 testing support?
-      - run: stack test
       - uses: actions/cache@v2
         with:
           path: |
@@ -33,4 +32,3 @@ jobs:
             stack-${{ runner.os }}-9.2
       - run: stack test
       - run: stack test --stack-yaml stack-ghc-9.2.yaml
-

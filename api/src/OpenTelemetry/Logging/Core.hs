@@ -59,7 +59,7 @@ data Log body = Log
   -- ^ Describes the source of the log, aka resource. Multiple occurrences of events coming from the same event source can happen across time and they all have the same value of Resource. Can contain for example information about the application that emits the record or about the infrastructure where the application runs. Data formats that represent this data model may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources. This field is optional.
   , attributes :: Maybe [(Text, Attribute)]
   -- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source. Can contain information about the request context (other than TraceId/SpanId). SHOULD follow OpenTelemetry semantic conventions for Log Attributes or semantic conventions for Span Attributes. This field is optional.
-  } deriving stock (Functor)
+  } deriving stock (Show, Functor)
 
 data SeverityNumber
   = Trace
