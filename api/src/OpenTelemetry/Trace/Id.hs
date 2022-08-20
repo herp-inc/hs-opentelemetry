@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Trace.Id
@@ -61,6 +62,7 @@ import qualified Data.ByteString.Builder as B
 import Data.Hashable (Hashable)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
+import GHC.Generics (Generic)
 
 import Data.ByteString.Short.Internal
 import GHC.Exts
@@ -72,7 +74,7 @@ import Prelude hiding (length)
 
 -- | A valid trace identifier is a 16-byte array with at least one non-zero byte.
 newtype TraceId = TraceId ShortByteString
-  deriving stock (Ord, Eq)
+  deriving stock (Ord, Eq, Generic)
   deriving newtype (Hashable)
 
 -- | A valid span identifier is an 8-byte array with at least one non-zero byte.
