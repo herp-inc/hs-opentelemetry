@@ -58,4 +58,3 @@ module OpenTelemetry.Trace.Id (
 ) where
 
 import OpenTelemetry.Internal.Trace.Id
-
