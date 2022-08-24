@@ -3,16 +3,18 @@ let
   settings = import ./nix/ghc.nix {};
 in
   with pkgs;
-  with settings;
   mkShell {
     buildInputs = [
       niv
 
-      ghc
+      settings.ghc
       stack
+      cabal-install
+      hpack
+      haskell-language-server
+      stylish-haskell
+      hlint
 
-      haskell.packages.${compiler}.implicit-hie
-      haskell.packages.${compiler}.haskell-language-server
-      haskell.packages.${compiler}.hspec-discover
+      zlib
     ];
   }

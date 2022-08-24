@@ -1,0 +1,17 @@
+packages: api
+          sdk
+          otlp
+          exporters/handle
+          exporters/in-memory
+          exporters/otlp
+          propagators/datadog
+          propagators/w3c
+          instrumentation/conduit
+          instrumentation/cloudflare
+          instrumentation/http-client
+          instrumentation/persistent
+          instrumentation/postgresql-simple
+          instrumentation/yesod
+          instrumentation/wai
+          examples/http-server
+          examples/yesod-minimal
