@@ -10,8 +10,11 @@ packages: api
           instrumentation/cloudflare
           instrumentation/http-client
           instrumentation/persistent
+          instrumentation/persistent-mysql
           instrumentation/postgresql-simple
           instrumentation/yesod
           instrumentation/wai
           examples/http-server
           examples/yesod-minimal
+
+with-compiler: ghc-9.0.2

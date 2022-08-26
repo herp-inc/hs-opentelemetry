@@ -47,6 +47,7 @@ packages:
 - instrumentation/cloudflare
 - instrumentation/http-client
 - instrumentation/persistent
+- instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
 - instrumentation/yesod
 - instrumentation/wai
@@ -80,7 +81,7 @@ extra-deps:
 # extra-package-dbs: []
 
 # Control whether we use the GHC we find on the path
-system-ghc: true
+# system-ghc: true
 
 # Require a specific version of stack, using version ranges
 # require-stack-version: -any # Default

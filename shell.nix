@@ -1,13 +1,13 @@
 let
   pkgs = import ./nix/pkgs.nix {};
-  settings = import ./nix/ghc.nix {};
+  ghc = import ./nix/ghc.nix {};
 in
   with pkgs;
   mkShell {
     buildInputs = [
       niv
 
-      settings.ghc
+      ghc.ghc
       stack
       cabal-install
       hpack
@@ -15,6 +15,10 @@ in
       stylish-haskell
       hlint
 
+      mysql57
+      openssl
+      pcre
+      postgresql
       zlib
     ];
   }

@@ -4,7 +4,13 @@ let
 in
   with pkgs;
   haskell.lib.buildStackProject {
-    buildInputs = [postgresql zlib];
+    buildInputs = [
+      mysql57
+      openssl
+      pcre
+      postgresql
+      zlib
+    ];
     ghc = ghc.ghc;
     name = "hs-opentelemetry";
   }
