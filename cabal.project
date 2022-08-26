@@ -18,6 +18,7 @@ packages:
   , instrumentation/wai
   , examples/yesod-minimal
   , examples/yesod-subsite
+  , examples/http-server
   , utils/exceptions
 
 -- https://github.com/vincenthz/hs-memory/pull/93
