@@ -29,6 +29,7 @@ datadogTraceContextPropagator logger =
   Propagator
     { propagatorNames = ["datadog trace context"]
     , extractor = \hs c -> do
+        logger $ "hs-opentelemetry-propagator-datadog: extractor: headers: " ++ show hs
         let
           spanContext' = do
             traceId <- TraceId . newTraceIdFromHeader <$> lookup traceIdKey hs
