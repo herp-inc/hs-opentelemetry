@@ -54,6 +54,7 @@ import UnliftIO hiding (Handler)
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
   { minimalConnectionPool :: Pool SqlBackend
+  , tracerProvider :: TracerProvider
   }
 
 $( do
@@ -87,6 +88,9 @@ instance YesodPersist Minimal where
           Just pgConn -> staticConnectionAttributes pgConn
         wrapSqlBackend staticAttrs conn
 
+instance YesodOpenTelemetryTrace Minimal where
+  getTracerProvider = tracerProvider
+
 getRootR :: Handler Text
 getRootR = do
   -- Wouldn't put this here in a real app
@@ -118,10 +122,10 @@ getApiR = do
 main :: IO ()
 main = do
   bracket 
-    initializeGlobalTracerProvider 
-    shutdownTracerProvider $ \_ -> do
+    initializeTracerProvider 
+    shutdownTracerProvider $ \tp -> do
       runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
-        waiApp <- toWaiApp $ Minimal pool
-        openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware
+        waiApp <- toWaiApp $ Minimal pool tp
+        openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware' tp
 
         run 3000 $ openTelemetryWaiMiddleware waiApp

@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module OpenTelemetry.Instrumentation.Yesod
   (
@@ -10,6 +12,7 @@ module OpenTelemetry.Instrumentation.Yesod
   RouteRenderer(..),
   mkRouteToRenderer,
   mkRouteToPattern,
+  YesodOpenTelemetryTrace(..),
   -- * Utilities
   rheSiteL,
   handlerEnvL
@@ -21,8 +24,8 @@ import qualified Data.Text.Encoding as T
 import Lens.Micro
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
-import OpenTelemetry.Trace.Monad
+import OpenTelemetry.Trace.Core hiding (getTracer, inSpan, inSpan', inSpan'')
+import qualified OpenTelemetry.Trace.Monad as M
 import Yesod.Core
 import Yesod.Core.Types
 import Language.Haskell.TH.Syntax
@@ -40,10 +43,20 @@ rheSiteL :: Lens' (RunHandlerEnv child site) site
 rheSiteL = lens rheSite (\rhe new -> rhe { rheSite = new })
 {-# INLINE rheSiteL #-}
 
-instance MonadTracer (HandlerFor site) where
-  getTracer = do
-    tp <- getGlobalTracerProvider
-    OpenTelemetry.Trace.Core.getTracer tp "hs-opentelemetry-instrumentation-yesod" tracerOptions
+class YesodOpenTelemetryTrace site where
+  getTracerProvider :: site -> TracerProvider
+  getTracer :: (MonadHandler m, HandlerSite m ~ site) => m Tracer
+  default getTracer :: (MonadHandler m, HandlerSite m ~ site) => m Tracer
+  getTracer =
+    liftHandler $
+      HandlerFor $ \hdata -> do
+        let
+          site = rheSite $ handlerEnv hdata
+          tracerProvider = getTracerProvider site
+        pure $ makeTracer tracerProvider "hs-opentelemetry-instrumentation-yesod" tracerOptions
+
+instance YesodOpenTelemetryTrace site => M.MonadTracer (HandlerFor site) where
+  getTracer = getTracer
 
 -- | Template Haskell to generate a function named routeToRendererFunction.
 --
@@ -150,7 +163,7 @@ data RouteRenderer site = RouteRenderer
   }
 
 openTelemetryYesodMiddleware
-  :: (ToTypedContent res)
+  :: (YesodOpenTelemetryTrace site, ToTypedContent res)
   => RouteRenderer site
   -> HandlerFor site res
   -> HandlerFor site res
@@ -172,7 +185,7 @@ openTelemetryYesodMiddleware rr m = do
         , attributes = sharedAttributes
         }
   mapM_ (`addAttributes` sharedAttributes) mspan
-  eResult <- inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
+  eResult <- M.inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
     catch (Right <$> m) $ \e -> do
       -- We want to mark the span as an error if it's an InternalError,
       -- the other HCError values are 4xx status codes which don't
