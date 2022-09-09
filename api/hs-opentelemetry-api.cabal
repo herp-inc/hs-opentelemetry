@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.34.7.
 --
 -- see: https://github.com/sol/hpack
 
@@ -83,6 +83,7 @@ library
     , template-haskell
     , text
     , thread-utils-context ==0.2.*
+    , transformers
     , unliftio-core
     , unordered-containers
     , vault
@@ -122,6 +123,7 @@ test-suite hs-opentelemetry-api-test
     , template-haskell
     , text
     , thread-utils-context ==0.2.*
+    , transformers
     , unliftio-core
     , unordered-containers
     , vault
