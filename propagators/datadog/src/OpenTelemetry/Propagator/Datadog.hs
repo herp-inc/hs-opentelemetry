@@ -31,12 +31,11 @@ import           Text.Read                      (readMaybe)
 
 -- メモ：Open Telemetry の Trace の ID と Datadog の APM の ID の相互変換に関する情報
 -- - https://docs.datadoghq.com/ja/tracing/connect_logs_and_traces/opentelemetry/
-datadogTraceContextPropagator :: (String -> IO ()) -> Propagator Context RequestHeaders ResponseHeaders
-datadogTraceContextPropagator logger =
+datadogTraceContextPropagator :: Propagator Context RequestHeaders ResponseHeaders
+datadogTraceContextPropagator =
   Propagator
     { propagatorNames = ["datadog trace context"]
     , extractor = \hs c -> do
-        logger $ "hs-opentelemetry-propagator-datadog: extractor: headers: " ++ show hs
         let
           spanContext' = do
             traceId <- TraceId . SB.toShort . fillLeadingZeros 16 . convertWord64ToBinaryByteString <$> (readMaybe . BC.unpack =<< lookup traceIdKey hs)
@@ -64,9 +63,7 @@ datadogTraceContextPropagator logger =
               parentIdValue = (\(SpanId b) -> BC.pack $ show $ convertBinaryByteStringToWord64 $ SB.fromShort b) spanId
             samplingPriority <-
               case lookup (TS.Key samplingPriorityKey) traceState of
-                Nothing -> do
-                  logger $ "sampling-priority not found at trace state: trace ID: " ++ show traceId ++ ", span ID: " ++ show spanId ++ ", headers: " ++ show hs
-                  pure "0"
+                Nothing -> pure "1" -- when an origin of the trace
                 Just (TS.Value p) -> pure $ BC.pack $ T.unpack p
             pure
               $ (traceIdKey, traceIdValue)
