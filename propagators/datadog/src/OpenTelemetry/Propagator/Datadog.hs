@@ -4,6 +4,8 @@
 
 module OpenTelemetry.Propagator.Datadog
   ( datadogTraceContextPropagator
+  , convertOpenTelemetrySpanIdToDatadogSpanId
+  , convertOpenTelemetryTraceIdToDatadogTraceId
   ) where
 
 import           OpenTelemetry.Common           (TraceFlags (TraceFlags))
@@ -76,6 +78,12 @@ datadogTraceContextPropagator =
     traceIdKey = "x-datadog-trace-id"
     parentIdKey = "x-datadog-parent-id"
     samplingPriorityKey = "x-datadog-sampling-priority"
+
+convertOpenTelemetrySpanIdToDatadogSpanId :: SpanId -> Word64
+convertOpenTelemetrySpanIdToDatadogSpanId (SpanId bs) = convertBinaryByteStringToWord64 $ SB.fromShort bs
+
+convertOpenTelemetryTraceIdToDatadogTraceId :: TraceId -> Word64
+convertOpenTelemetryTraceIdToDatadogTraceId (TraceId bs) = convertBinaryByteStringToWord64 $ SB.fromShort bs
 
 convertBinaryByteStringToWord64 :: ByteString -> Word64
 convertBinaryByteStringToWord64 = B.foldl (\acc b -> (2 ^ (8 :: Int)) * acc + fromIntegral b) 0 -- GHC.Prim.indexWord8ArrayAsWord64# とか駆使すると早くなりそう
