@@ -13,12 +13,15 @@ module OpenTelemetry.Instrumentation.Yesod
   mkRouteToRenderer,
   mkRouteToPattern,
   YesodOpenTelemetryTrace(..),
+  getHandlerSpan,
+  getHandlerSpan',
+  spanKey,
   -- * Utilities
   rheSiteL,
   handlerEnvL
   ) where
 
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromJust)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Lens.Micro
@@ -29,11 +32,13 @@ import qualified OpenTelemetry.Trace.Monad as M
 import Yesod.Core
 import Yesod.Core.Types
 import Language.Haskell.TH.Syntax
-import Network.Wai (requestHeaders)
+import Network.Wai (requestHeaders, Request (vault))
 import Yesod.Routes.TH.Types
 import UnliftIO.Exception
 import Data.Text (Text)
 import Data.List (intercalate)
+import qualified Data.Vault.Lazy as V
+import System.IO.Unsafe (unsafePerformIO)
 
 handlerEnvL :: Lens' (HandlerData child site) (RunHandlerEnv child site)
 handlerEnvL = lens handlerEnv (\h e -> h { handlerEnv = e })
@@ -165,7 +170,7 @@ openTelemetryYesodMiddleware
   => RouteRenderer site
   -> HandlerFor site res
   -> HandlerFor site res
-openTelemetryYesodMiddleware rr m = do
+openTelemetryYesodMiddleware rr (HandlerFor doResponse) = do
   -- tracer <- OpenTelemetry.Trace.Monad.getTracer
   req <- waiRequest
   mspan <- Context.lookupSpan <$> getContext
@@ -183,15 +188,29 @@ openTelemetryYesodMiddleware rr m = do
         , attributes = sharedAttributes
         }
   mapM_ (`addAttributes` sharedAttributes) mspan
-  eResult <- M.inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
-    catch (Right <$> m) $ \e -> do
-      -- We want to mark the span as an error if it's an InternalError,
-      -- the other HCError values are 4xx status codes which don't
-      -- really count as a server error in OpenTelemetry spec parlance.
-      case e of
-        HCError (InternalError _) -> throwIO e
-        _ -> pure ()
-      pure (Left (e :: HandlerContents))
+  eResult <- M.inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \s -> do
+    catch
+      ( HandlerFor $ \hdata@HandlerData { handlerRequest = hReq@YesodRequest { reqWaiRequest = waiReq }} -> do
+          Right <$> doResponse (hdata { handlerRequest = hReq { reqWaiRequest = waiReq { vault = V.insert spanKey s $ vault waiReq } } })
+      )
+      $ \e -> do
+          -- We want to mark the span as an error if it's an InternalError,
+          -- the other HCError values are 4xx status codes which don't
+          -- really count as a server error in OpenTelemetry spec parlance.
+          case e of
+            HCError (InternalError _) -> throwIO e
+            _ -> pure (Left (e :: HandlerContents))
   case eResult of
     Left hc -> throwIO hc
     Right normal -> pure normal
+
+spanKey :: V.Key Span
+spanKey = unsafePerformIO V.newKey
+{-# NOINLINE spanKey #-}
+
+getHandlerSpan :: MonadHandler m => m (Maybe Span)
+getHandlerSpan = liftHandler $ HandlerFor $ pure . V.lookup spanKey . vault . reqWaiRequest . handlerRequest
+
+-- | When without Open Telemetry middleware, this fails.
+getHandlerSpan' :: MonadHandler m => m Span
+getHandlerSpan' = liftHandler $ HandlerFor $ pure . fromJust . V.lookup spanKey . vault . reqWaiRequest . handlerRequest

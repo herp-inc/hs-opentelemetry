@@ -28,6 +28,7 @@ dependencies:
 - unliftio
 - text
 - template-haskell
+- vault
 - wai
 
 library:
