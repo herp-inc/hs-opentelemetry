@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DefaultSignatures #-}
@@ -84,11 +84,11 @@ goTree front names (ResourceParent name _check pieces trees) =
     toIgnore = length $ filter isDynamic pieces
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
-#if MIN_VERSION_template_haskell(2, 18, 0)
-    front' = front . ConP (mkName name) [] . ignored
-#else
+
+
+
     front' = front . ConP (mkName name) . ignored
-#endif
+
     newNames = names <> [name]
 
 goRes :: (Pat -> Pat) -> [String] -> Resource a -> Q Clause
@@ -134,16 +134,14 @@ mkRouteToPattern appName ress = do
 
 renderPattern :: FlatResource String -> String
 renderPattern FlatResource{..} = concat $ concat
-  [ if frCheck then [] else ["!"]
+  [ ["!" | not frCheck]
   , case formattedParentPieces <> concatMap routePortionSection frPieces of
       [] -> ["/"]
       pieces -> pieces
   , case frDispatch of
-      Methods{..} -> concat
-        [ case methodsMulti of
-            Nothing -> []
-            Just t -> ["/+", t]
-        ]
+      Methods{..} -> case methodsMulti of
+                       Nothing -> []
+                       Just t -> ["/+", t]
       Subsite{} -> []
   ]
   where
