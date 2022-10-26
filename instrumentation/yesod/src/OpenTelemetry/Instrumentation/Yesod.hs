@@ -89,11 +89,11 @@ goTree front names (ResourceParent name _check pieces trees) =
     toIgnore = length $ filter isDynamic pieces
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
-
-
-
+#if MIN_VERSION_template_haskell(2, 18, 0)
+    front' = front . ConP (mkName name) [] . ignored
+#else
     front' = front . ConP (mkName name) . ignored
-
+#endif
     newNames = names <> [name]
 
 goRes :: (Pat -> Pat) -> [String] -> Resource a -> Q Clause
