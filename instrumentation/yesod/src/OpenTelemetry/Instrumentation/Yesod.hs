@@ -39,6 +39,10 @@ import Data.Text (Text)
 import Data.List (intercalate)
 import qualified Data.Vault.Lazy as V
 import System.IO.Unsafe (unsafePerformIO)
+import Data.Map (Map)
+import qualified Data.Map as M
+import Language.Haskell.TH
+
 
 handlerEnvL :: Lens' (HandlerData child site) (RunHandlerEnv child site)
 handlerEnvL = lens handlerEnv (\h e -> h { handlerEnv = e })
@@ -68,22 +72,23 @@ instance YesodOpenTelemetryTrace site => M.MonadTracer (HandlerFor site) where
 -- For a route like HomeR, this function returns "HomeR".
 --
 -- For routes with parents, this function returns e.g. "FooR.BarR.BazR".
-mkRouteToRenderer :: Name -> [ResourceTree a] -> Q [Dec]
-mkRouteToRenderer appName ress = do
+mkRouteToRenderer :: Name -> Map String ExpQ -> [ResourceTree String] -> Q [Dec]
+mkRouteToRenderer appName subrendererExps ress = do
   let fnName = mkName "routeToRenderer"
       t1 `arrow` t2 = ArrowT `AppT` t1 `AppT` t2
 
-  clauses <- mapM (goTree id []) ress
+  clauses <- mapM (goTree id [] subrendererExps) ress
 
   pure
     [ SigD fnName ((ConT ''Route `AppT` ConT appName) `arrow` ConT ''Text)
     , FunD fnName $ concat clauses
     ]
 
-goTree :: (Pat -> Pat) -> [String] -> ResourceTree a -> Q [Clause]
-goTree front names (ResourceLeaf res) = pure <$> goRes front names res
-goTree front names (ResourceParent name _check pieces trees) =
-  concat <$> mapM (goTree front' newNames) trees
+
+goTree :: (Pat -> Pat) -> [String] -> Map String ExpQ -> ResourceTree String -> Q [Clause]
+goTree front names subrendererExps (ResourceLeaf res) = pure <$> goRes front names subrendererExps res
+goTree front names subrendererExps (ResourceParent name _check pieces trees) =
+  concat <$> mapM (goTree front' newNames subrendererExps) trees
   where
     ignored = (replicate toIgnore WildP ++) . pure
     toIgnore = length $ filter isDynamic pieces
@@ -96,13 +101,24 @@ goTree front names (ResourceParent name _check pieces trees) =
 #endif
     newNames = names <> [name]
 
-goRes :: (Pat -> Pat) -> [String] -> Resource a -> Q Clause
-goRes front names Resource {..} =
-  pure $
-    Clause
-      [front $ RecP (mkName resourceName) []]
-      (NormalB $ toText $ intercalate "." (names <> [resourceName]))
-      []
+goRes :: (Pat -> Pat) -> [String] -> Map String ExpQ -> Resource String -> Q Clause
+goRes front names subrendererExps Resource {..} =
+  case resourceDispatch of
+    Methods {} ->
+      pure $
+        Clause
+          [front $ RecP (mkName resourceName) []]
+          (NormalB $ toText $ intercalate "." (names <> [resourceName]))
+          []
+    Subsite {..} -> do
+      case M.lookup subsiteType subrendererExps of
+        Just subrendererExp -> do
+          subsiteVar <- newName "subsite"
+          clause
+              [conP (mkName resourceName) [varP subsiteVar]]
+              (normalB [|resourceName <> "." <> $(subrendererExp) $(varE subsiteVar)|])
+              []
+        Nothing -> fail $ "mkRouteToRenderer: not found: " ++ subsiteType
   where
     toText s = VarE 'T.pack `AppE` LitE (StringL s)
 

@@ -8,6 +8,9 @@
 
 module Minimal where
 
+import Subsite ( Subsite(Subsite), resourcesSubsite, Route(SubHomeR) )
+import qualified Subsite
+
 import qualified Data.ByteString.Lazy as L
 import Conduit
 import Data.Conduit.List as CL
@@ -50,6 +53,7 @@ import OpenTelemetry.Exporter.OTLP
 import OpenTelemetry.Processor.Batch
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 import UnliftIO hiding (Handler)
+import qualified Data.Map as M
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
@@ -63,7 +67,7 @@ $( do
           /api ApiR GET
         |]
     Prelude.concat <$> Prelude.sequence 
-      [ mkRouteToRenderer ''Minimal routes
+      [ mkRouteToRenderer ''Minimal (M.fromList [("Subsite", [|Subsite.routeToRenderer|])]) routes
       , mkRouteToPattern ''Minimal routes
       , mkYesod "Minimal" routes
       ]
