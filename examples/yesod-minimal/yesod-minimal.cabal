@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.34.7.
 --
 -- see: https://github.com/sol/hpack
 
@@ -11,6 +11,8 @@ build-type:     Simple
 library
   exposed-modules:
       Minimal
+      Subsite
+      Subsite.Data
   other-modules:
       Paths_yesod_minimal
   hs-source-dirs:
@@ -19,6 +21,7 @@ library
       base
     , bytestring
     , conduit
+    , containers
     , hs-opentelemetry-exporter-handle
     , hs-opentelemetry-exporter-otlp
     , hs-opentelemetry-instrumentation-http-client
@@ -36,6 +39,7 @@ library
     , persistent-postgresql >=2.13.4
     , persistent-qq
     , resource-pool
+    , template-haskell
     , text
     , unliftio
     , vault
@@ -49,6 +53,8 @@ library
 executable yesod-minimal
   main-is: Minimal.hs
   other-modules:
+      Subsite
+      Subsite.Data
       Paths_yesod_minimal
   hs-source-dirs:
       src
@@ -57,6 +63,7 @@ executable yesod-minimal
       base
     , bytestring
     , conduit
+    , containers
     , hs-opentelemetry-exporter-handle
     , hs-opentelemetry-exporter-otlp
     , hs-opentelemetry-instrumentation-http-client
@@ -74,6 +81,7 @@ executable yesod-minimal
     , persistent-postgresql >=2.13.4
     , persistent-qq
     , resource-pool
+    , template-haskell
     , text
     , unliftio
     , vault

@@ -9,6 +9,10 @@
 
 module Minimal where
 
+import Subsite ( Subsite(Subsite), resourcesSubsite, Route(SubHomeR) )
+import qualified Subsite
+
+import qualified Data.ByteString.Lazy as L
 import Conduit
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -51,7 +55,8 @@ import Yesod.Core (
  )
 import Yesod.Core.Handler
 import Yesod.Persist
-
+import UnliftIO hiding (Handler)
+import qualified Data.Map as M
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
