@@ -6,8 +6,8 @@
 module Subsite.Data where
 
 import Data.Text (Text)
-import Yesod.Core
 import OpenTelemetry.Instrumentation.Yesod
+import Yesod.Core
 
 
 data Subsite = Subsite
@@ -27,8 +27,10 @@ $( do
         ]
  )
 
+
 getSubHomeR :: SubHandlerFor Subsite master Text
 getSubHomeR = pure "SubHome"
+
 
 getFooR :: SubHandlerFor Subsite master Text
 getFooR = pure "Foo"

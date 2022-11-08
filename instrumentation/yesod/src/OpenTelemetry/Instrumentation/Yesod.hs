@@ -1,56 +1,58 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module OpenTelemetry.Instrumentation.Yesod
-  (
+
+module OpenTelemetry.Instrumentation.Yesod (
   -- * Middleware functionality
   openTelemetryYesodMiddleware,
-  RouteRenderer(..),
+  RouteRenderer (..),
   mkRouteToRenderer,
   mkRouteToPattern,
-  YesodOpenTelemetryTrace(..),
+  YesodOpenTelemetryTrace (..),
   getHandlerSpan,
   getHandlerSpan',
   spanKey,
+
   -- * Utilities
   rheSiteL,
-  handlerEnvL
-  ) where
+  handlerEnvL,
+) where
 
+import Data.List (intercalate)
+import Data.Map (Map)
+import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromJust)
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Vault.Lazy as V
+import Language.Haskell.TH
 import Lens.Micro
+import Network.Wai (Request (vault), requestHeaders)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Trace.Core hiding (getTracer, inSpan, inSpan', inSpan'')
 import qualified OpenTelemetry.Trace.Monad as M
+import System.IO.Unsafe (unsafePerformIO)
+import UnliftIO.Exception
 import Yesod.Core
 import Yesod.Core.Types
-import Language.Haskell.TH.Syntax
-import Network.Wai (requestHeaders, Request (vault))
 import Yesod.Routes.TH.Types
-import UnliftIO.Exception
-import Data.Text (Text)
-import Data.List (intercalate)
-import qualified Data.Vault.Lazy as V
-import System.IO.Unsafe (unsafePerformIO)
-import Data.Map (Map)
-import qualified Data.Map as M
-import Language.Haskell.TH
 
 
 handlerEnvL :: Lens' (HandlerData child site) (RunHandlerEnv child site)
-handlerEnvL = lens handlerEnv (\h e -> h { handlerEnv = e })
+handlerEnvL = lens handlerEnv (\h e -> h {handlerEnv = e})
 {-# INLINE handlerEnvL #-}
 
+
 rheSiteL :: Lens' (RunHandlerEnv child site) site
-rheSiteL = lens rheSite (\rhe new -> rhe { rheSite = new })
+rheSiteL = lens rheSite (\rhe new -> rhe {rheSite = new})
 {-# INLINE rheSiteL #-}
+
 
 class YesodOpenTelemetryTrace site where
   getTracerProvider :: site -> TracerProvider
@@ -59,19 +61,21 @@ class YesodOpenTelemetryTrace site where
   getTracer =
     liftHandler $
       HandlerFor $ \hdata -> do
-        let
-          site = rheSite $ handlerEnv hdata
-          tracerProvider = getTracerProvider site
+        let site = rheSite $ handlerEnv hdata
+            tracerProvider = getTracerProvider site
         pure $ makeTracer tracerProvider "hs-opentelemetry-instrumentation-yesod" tracerOptions
+
 
 instance YesodOpenTelemetryTrace site => M.MonadTracer (HandlerFor site) where
   getTracer = getTracer
 
--- | Template Haskell to generate a function named routeToRendererFunction.
---
--- For a route like HomeR, this function returns "HomeR".
---
--- For routes with parents, this function returns e.g. "FooR.BarR.BazR".
+
+{- | Template Haskell to generate a function named routeToRendererFunction.
+
+ For a route like HomeR, this function returns "HomeR".
+
+ For routes with parents, this function returns e.g. "FooR.BarR.BazR".
+-}
 mkRouteToRenderer :: Name -> Map String ExpQ -> [ResourceTree String] -> Q [Dec]
 mkRouteToRenderer appName subrendererExps ress = do
   let fnName = mkName "routeToRenderer"
@@ -101,6 +105,7 @@ goTree front names subrendererExps (ResourceParent name _check pieces trees) =
 #endif
     newNames = names <> [name]
 
+
 goRes :: (Pat -> Pat) -> [String] -> Map String ExpQ -> Resource String -> Q Clause
 goRes front names subrendererExps Resource {..} =
   case resourceDispatch of
@@ -115,12 +120,13 @@ goRes front names subrendererExps Resource {..} =
         Just subrendererExp -> do
           subsiteVar <- newName "subsite"
           clause
-              [conP (mkName resourceName) [varP subsiteVar]]
-              (normalB [|resourceName <> "." <> $(subrendererExp) $(varE subsiteVar)|])
-              []
+            [conP (mkName resourceName) [varP subsiteVar]]
+            (normalB [|resourceName <> "." <> $(subrendererExp) $(varE subsiteVar)|])
+            []
         Nothing -> fail $ "mkRouteToRenderer: not found: " ++ subsiteType
   where
     toText s = VarE 'T.pack `AppE` LitE (StringL s)
+
 
 mkRouteToPattern :: Name -> [ResourceTree String] -> Q [Dec]
 mkRouteToPattern appName ress = do
@@ -133,38 +139,45 @@ mkRouteToPattern appName ress = do
     [ SigD fnName ((ConT ''Route `AppT` ConT appName) `arrow` ConT ''Text)
     , FunD fnName clauses
     ]
-
   where
     toText s = VarE 'T.pack `AppE` LitE (StringL s)
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
 #if MIN_VERSION_template_haskell(2, 18, 0)
-    parentPieceWrapper (parentName, pieces) nestedPat = ConP (mkName parentName) [] $ mconcat
+    parentPieceWrapper (parentName, pieces) nestedPat =
+      ConP (mkName parentName) [] $
+        mconcat
 #else
-    parentPieceWrapper (parentName, pieces) nestedPat = ConP (mkName parentName) $ mconcat
+    parentPieceWrapper (parentName, pieces) nestedPat =
+      ConP (mkName parentName) $
+        mconcat
 #endif
-      [ replicate (length $ filter isDynamic pieces) WildP
-      , [nestedPat]
-      ]
-    mkClause fr@FlatResource{..} = do
+          [ replicate (length $ filter isDynamic pieces) WildP
+          , [nestedPat]
+          ]
+    mkClause fr@FlatResource {..} = do
       let clausePattern = foldr parentPieceWrapper (RecP (mkName frName) []) frParentPieces
-      pure $ Clause
-        [clausePattern]
-        (NormalB $ toText $ renderPattern fr)
-        []
+      pure $
+        Clause
+          [clausePattern]
+          (NormalB $ toText $ renderPattern fr)
+          []
+
 
 renderPattern :: FlatResource String -> String
-renderPattern FlatResource{..} = concat $ concat
-  [ ["!" | not frCheck]
-  , case formattedParentPieces <> concatMap routePortionSection frPieces of
-      [] -> ["/"]
-      pieces -> pieces
-  , case frDispatch of
-      Methods{..} -> case methodsMulti of
-                       Nothing -> []
-                       Just t -> ["/+", t]
-      Subsite{} -> []
-  ]
+renderPattern FlatResource {..} =
+  concat $
+    concat
+      [ ["!" | not frCheck]
+      , case formattedParentPieces <> concatMap routePortionSection frPieces of
+          [] -> ["/"]
+          pieces -> pieces
+      , case frDispatch of
+          Methods {..} -> case methodsMulti of
+            Nothing -> []
+            Just t -> ["/+", t]
+          Subsite {} -> []
+      ]
   where
     routePortionSection :: Piece String -> [String]
     routePortionSection (Static t) = ["/", t]
@@ -176,56 +189,63 @@ renderPattern FlatResource{..} = concat $ concat
       piece <- pieces
       routePortionSection piece
 
+
 data RouteRenderer site = RouteRenderer
   { nameRender :: Route site -> T.Text
   , pathRender :: Route site -> T.Text
   }
 
-openTelemetryYesodMiddleware
-  :: (YesodOpenTelemetryTrace site, ToTypedContent res)
-  => RouteRenderer site
-  -> HandlerFor site res
-  -> HandlerFor site res
+
+openTelemetryYesodMiddleware ::
+  (YesodOpenTelemetryTrace site, ToTypedContent res) =>
+  RouteRenderer site ->
+  HandlerFor site res ->
+  HandlerFor site res
 openTelemetryYesodMiddleware rr (HandlerFor doResponse) = do
   -- tracer <- OpenTelemetry.Trace.Monad.getTracer
   req <- waiRequest
   mspan <- Context.lookupSpan <$> getContext
   mr <- getCurrentRoute
-  let sharedAttributes = catMaybes
-        [ do
-            r <- mr
-            pure ("http.route", toAttribute $ pathRender rr r)
-        , do
-            ff <- lookup "X-Forwarded-For" $ requestHeaders req
-            pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
-        ]
-      args = defaultSpanArguments
-        { kind = maybe Server (const Internal) mspan
-        , attributes = sharedAttributes
-        }
+  let sharedAttributes =
+        catMaybes
+          [ do
+              r <- mr
+              pure ("http.route", toAttribute $ pathRender rr r)
+          , do
+              ff <- lookup "X-Forwarded-For" $ requestHeaders req
+              pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+          ]
+      args =
+        defaultSpanArguments
+          { kind = maybe Server (const Internal) mspan
+          , attributes = sharedAttributes
+          }
   mapM_ (`addAttributes` sharedAttributes) mspan
   eResult <- M.inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \s -> do
     catch
-      ( HandlerFor $ \hdata@HandlerData { handlerRequest = hReq@YesodRequest { reqWaiRequest = waiReq }} -> do
-          Right <$> doResponse (hdata { handlerRequest = hReq { reqWaiRequest = waiReq { vault = V.insert spanKey s $ vault waiReq } } })
+      ( HandlerFor $ \hdata@HandlerData {handlerRequest = hReq@YesodRequest {reqWaiRequest = waiReq}} -> do
+          Right <$> doResponse (hdata {handlerRequest = hReq {reqWaiRequest = waiReq {vault = V.insert spanKey s $ vault waiReq}}})
       )
       $ \e -> do
-          -- We want to mark the span as an error if it's an InternalError,
-          -- the other HCError values are 4xx status codes which don't
-          -- really count as a server error in OpenTelemetry spec parlance.
-          case e of
-            HCError (InternalError _) -> throwIO e
-            _ -> pure (Left (e :: HandlerContents))
+        -- We want to mark the span as an error if it's an InternalError,
+        -- the other HCError values are 4xx status codes which don't
+        -- really count as a server error in OpenTelemetry spec parlance.
+        case e of
+          HCError (InternalError _) -> throwIO e
+          _ -> pure (Left (e :: HandlerContents))
   case eResult of
     Left hc -> throwIO hc
     Right normal -> pure normal
+
 
 spanKey :: V.Key Span
 spanKey = unsafePerformIO V.newKey
 {-# NOINLINE spanKey #-}
 
+
 getHandlerSpan :: MonadHandler m => m (Maybe Span)
 getHandlerSpan = liftHandler $ HandlerFor $ pure . V.lookup spanKey . vault . reqWaiRequest . handlerRequest
+
 
 -- | When without Open Telemetry middleware, this fails.
 getHandlerSpan' :: MonadHandler m => m Span
