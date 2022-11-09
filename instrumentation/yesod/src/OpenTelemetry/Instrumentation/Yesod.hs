@@ -22,7 +22,6 @@ module OpenTelemetry.Instrumentation.Yesod (
   handlerEnvL,
 ) where
 
-import Data.List (intercalate)
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromJust)
@@ -89,31 +88,26 @@ mkRouteToRenderer appName subrendererExps ress = do
     ]
 
 
-goTree :: (Pat -> Pat) -> [String] -> Map String ExpQ -> ResourceTree String -> Q [Clause]
+goTree :: (Q Pat -> Q Pat) -> [String] -> Map String ExpQ -> ResourceTree String -> Q [Clause]
 goTree front names subrendererExps (ResourceLeaf res) = pure <$> goRes front names subrendererExps res
 goTree front names subrendererExps (ResourceParent name _check pieces trees) =
   concat <$> mapM (goTree front' newNames subrendererExps) trees
   where
-    ignored = (replicate toIgnore WildP ++) . pure
+    ignored = (replicate toIgnore wildP ++) . pure
     toIgnore = length $ filter isDynamic pieces
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
-#if MIN_VERSION_template_haskell(2, 18, 0)
-    front' = front . ConP (mkName name) [] . ignored
-#else
-    front' = front . ConP (mkName name) . ignored
-#endif
+    front' = front . conP' (mkName name) . ignored
     newNames = names <> [name]
 
 
-goRes :: (Pat -> Pat) -> [String] -> Map String ExpQ -> Resource String -> Q Clause
+goRes :: (Q Pat -> Q Pat) -> [String] -> Map String ExpQ -> Resource String -> Q Clause
 goRes front names subrendererExps Resource {..} =
   case resourceDispatch of
     Methods {} ->
-      pure $
-        Clause
-          [front $ RecP (mkName resourceName) []]
-          (NormalB $ toText $ intercalate "." (names <> [resourceName]))
+      clause
+          [front $ recP (mkName resourceName) []]
+          (normalB [|resourceName|])
           []
     Subsite {..} -> do
       case M.lookup subsiteType subrendererExps of
@@ -124,12 +118,10 @@ goRes front names subrendererExps Resource {..} =
             (normalB [|resourceName <> "." <> $(subrendererExp) $(varE subsiteVar)|])
             []
         Nothing -> fail $ "mkRouteToRenderer: not found: " ++ subsiteType
-  where
-    toText s = VarE 'T.pack `AppE` LitE (StringL s)
 
 
-mkRouteToPattern :: Name -> [ResourceTree String] -> Q [Dec]
-mkRouteToPattern appName ress = do
+mkRouteToPattern :: Name -> Map String ExpQ -> [ResourceTree String] -> Q [Dec]
+mkRouteToPattern appName subpatternExps ress = do
   let fnName = mkName "routeToPattern"
       t1 `arrow` t2 = ArrowT `AppT` t1 `AppT` t2
 
@@ -140,28 +132,37 @@ mkRouteToPattern appName ress = do
     , FunD fnName clauses
     ]
   where
-    toText s = VarE 'T.pack `AppE` LitE (StringL s)
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
-#if MIN_VERSION_template_haskell(2, 18, 0)
-    parentPieceWrapper (parentName, pieces) nestedPat =
-      ConP (mkName parentName) [] $
-        mconcat
-#else
-    parentPieceWrapper (parentName, pieces) nestedPat =
-      ConP (mkName parentName) $
-        mconcat
-#endif
-          [ replicate (length $ filter isDynamic pieces) WildP
-          , [nestedPat]
-          ]
+    parentPieceWrapper (parentName, pieces) nestedPat = conP' (mkName parentName) $ mconcat
+      [ replicate (length $ filter isDynamic pieces) wildP
+      , [nestedPat]
+      ]
     mkClause fr@FlatResource {..} = do
-      let clausePattern = foldr parentPieceWrapper (RecP (mkName frName) []) frParentPieces
-      pure $
-        Clause
-          [clausePattern]
-          (NormalB $ toText $ renderPattern fr)
-          []
+      let basePattern = renderPattern fr
+      case frDispatch of
+        Methods {} ->
+          clause
+            [foldr parentPieceWrapper (recP (mkName frName) []) frParentPieces]
+            (normalB $ appE [|T.pack|] [|basePattern|])
+            []
+        Subsite {..} ->
+          case M.lookup subsiteType subpatternExps of
+            Just subpatternExp -> do
+              subsiteVar <- newName "subsite"
+              clause
+                [foldr parentPieceWrapper (conP (mkName frName) [varP subsiteVar]) frParentPieces]
+                (normalB [|basePattern <> $(subpatternExp) $(varE subsiteVar)|])
+                []
+            Nothing -> fail $ "mkRouteToPattern: not found: " ++ subsiteType
+
+
+conP' :: Name -> [Q Pat] -> Q Pat
+#if MIN_VERSION_template_haskell(2, 18, 0)
+conP' n = conP n []
+#else
+conP' = conP
+#endif
 
 
 renderPattern :: FlatResource String -> String

@@ -6,15 +6,16 @@ dependencies:
 - bytestring
 - conduit
 - containers
-- yesod-core
-- yesod-form
 - http-client
 - http-types
+- template-haskell
+- text
+- unliftio
+- vault
 - wai
 - warp
-- text
-- vault
-- unliftio
+- yesod-core
+- yesod-form
 # database
 - yesod-persistent
 - monad-logger
@@ -34,7 +35,6 @@ dependencies:
 - hs-opentelemetry-instrumentation-postgresql-simple
 - hs-opentelemetry-propagator-w3c
 - hs-opentelemetry-exporter-otlp
-- template-haskell
 
 executables:
   yesod-minimal:

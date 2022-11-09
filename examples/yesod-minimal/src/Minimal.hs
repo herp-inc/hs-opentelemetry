@@ -56,7 +56,7 @@ $( do
     Prelude.concat
       <$> Prelude.sequence
         [ mkRouteToRenderer ''Minimal (M.fromList [("Subsite", [|Subsite.routeToRenderer|])]) routes
-        , mkRouteToPattern ''Minimal routes
+        , mkRouteToPattern ''Minimal (M.fromList [("Subsite", [|Subsite.routeToPattern|])]) routes
         , mkYesod "Minimal" routes
         ]
  )

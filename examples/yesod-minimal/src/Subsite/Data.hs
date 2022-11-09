@@ -22,7 +22,7 @@ $( do
     concat
       <$> sequence
         [ mkRouteToRenderer ''Subsite mempty routes
-        , mkRouteToPattern ''Subsite routes
+        , mkRouteToPattern ''Subsite mempty routes
         , mkYesodSubData "Subsite" routes
         ]
  )
