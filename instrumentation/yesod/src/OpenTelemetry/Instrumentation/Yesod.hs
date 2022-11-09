@@ -22,6 +22,7 @@ module OpenTelemetry.Instrumentation.Yesod (
   handlerEnvL,
 ) where
 
+import Data.List (intercalate)
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, fromJust)
@@ -80,44 +81,42 @@ mkRouteToRenderer appName subrendererExps ress = do
   let fnName = mkName "routeToRenderer"
       t1 `arrow` t2 = ArrowT `AppT` t1 `AppT` t2
 
-  clauses <- mapM (goTree id [] subrendererExps) ress
+  clauses <- mapM (goTree id []) ress
 
   pure
     [ SigD fnName ((ConT ''Route `AppT` ConT appName) `arrow` ConT ''Text)
     , FunD fnName $ concat clauses
     ]
-
-
-goTree :: (Q Pat -> Q Pat) -> [String] -> Map String ExpQ -> ResourceTree String -> Q [Clause]
-goTree front names subrendererExps (ResourceLeaf res) = pure <$> goRes front names subrendererExps res
-goTree front names subrendererExps (ResourceParent name _check pieces trees) =
-  concat <$> mapM (goTree front' newNames subrendererExps) trees
   where
-    ignored = (replicate toIgnore wildP ++) . pure
-    toIgnore = length $ filter isDynamic pieces
-    isDynamic Dynamic {} = True
-    isDynamic Static {} = False
-    front' = front . conP' (mkName name) . ignored
-    newNames = names <> [name]
+    goTree :: (Q Pat -> Q Pat) -> [String] -> ResourceTree String -> Q [Clause]
+    goTree front names (ResourceLeaf res) = pure <$> goRes front names res
+    goTree front names (ResourceParent name _check pieces trees) =
+      mconcat <$> traverse (goTree front' newNames) trees
+      where
+        ignored = (replicate toIgnore wildP ++) . pure
+        toIgnore = length $ filter isDynamic pieces
+        isDynamic Dynamic {} = True
+        isDynamic Static {} = False
+        front' = front . conP' (mkName name) . ignored
+        newNames = names <> [name]
 
-
-goRes :: (Q Pat -> Q Pat) -> [String] -> Map String ExpQ -> Resource String -> Q Clause
-goRes front names subrendererExps Resource {..} =
-  case resourceDispatch of
-    Methods {} ->
-      clause
-          [front $ recP (mkName resourceName) []]
-          (normalB [|resourceName|])
-          []
-    Subsite {..} -> do
-      case M.lookup subsiteType subrendererExps of
-        Just subrendererExp -> do
-          subsiteVar <- newName "subsite"
+    goRes :: (Q Pat -> Q Pat) -> [String] -> Resource String -> Q Clause
+    goRes front names Resource {..} =
+      case resourceDispatch of
+        Methods {} ->
           clause
-            [conP (mkName resourceName) [varP subsiteVar]]
-            (normalB [|resourceName <> "." <> $(subrendererExp) $(varE subsiteVar)|])
+            [front $ recP (mkName resourceName) []]
+            (normalB [|T.pack $ intercalate "." $ names <> [resourceName]|])
             []
-        Nothing -> fail $ "mkRouteToRenderer: not found: " ++ subsiteType
+        Subsite {..} -> do
+          case M.lookup subsiteType subrendererExps of
+            Just subrendererExp -> do
+              subsiteVar <- newName "subsite"
+              clause
+                [conP (mkName resourceName) [varP subsiteVar]]
+                (normalB [|resourceName <> "." <> $(subrendererExp) $(varE subsiteVar)|])
+                []
+            Nothing -> fail $ "mkRouteToRenderer: not found: " ++ subsiteType
 
 
 mkRouteToPattern :: Name -> Map String ExpQ -> [ResourceTree String] -> Q [Dec]
@@ -134,10 +133,12 @@ mkRouteToPattern appName subpatternExps ress = do
   where
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
-    parentPieceWrapper (parentName, pieces) nestedPat = conP' (mkName parentName) $ mconcat
-      [ replicate (length $ filter isDynamic pieces) wildP
-      , [nestedPat]
-      ]
+    parentPieceWrapper (parentName, pieces) nestedPat =
+      conP' (mkName parentName) $
+        mconcat
+          [ replicate (length $ filter isDynamic pieces) wildP
+          , [nestedPat]
+          ]
     mkClause fr@FlatResource {..} = do
       let basePattern = renderPattern fr
       case frDispatch of
