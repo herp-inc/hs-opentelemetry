@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -97,7 +96,7 @@ mkRouteToRenderer appName subrendererExps ress = do
         toIgnore = length $ filter isDynamic pieces
         isDynamic Dynamic {} = True
         isDynamic Static {} = False
-        front' = front . conP' (mkName name) . ignored
+        front' = front . conP (mkName name) . ignored
         newNames = names <> [name]
 
     goRes :: (Q Pat -> Q Pat) -> [String] -> Resource String -> Q Clause
@@ -134,7 +133,7 @@ mkRouteToPattern appName subpatternExps ress = do
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
     parentPieceWrapper (parentName, pieces) nestedPat =
-      conP' (mkName parentName) $
+      conP (mkName parentName) $
         mconcat
           [ replicate (length $ filter isDynamic pieces) wildP
           , [nestedPat]
@@ -156,14 +155,6 @@ mkRouteToPattern appName subpatternExps ress = do
                 (normalB [|basePattern <> $(subpatternExp) $(varE subsiteVar)|])
                 []
             Nothing -> fail $ "mkRouteToPattern: not found: " ++ subsiteType
-
-
-conP' :: Name -> [Q Pat] -> Q Pat
-#if MIN_VERSION_template_haskell(2, 18, 0)
-conP' n = conP n []
-#else
-conP' = conP
-#endif
 
 
 renderPattern :: FlatResource String -> String
