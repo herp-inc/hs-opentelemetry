@@ -1,0 +1,28 @@
+version: "3"
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "4317" # otelcol GRPC
+      - "4318" # otelcol HTTP/JSON
+      - "16686:16686" # UI and API
+
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_USER=otel
+      - POSTGRES_PASSWORD=password
+
+  yesod-minimal:
+    build:
+      context: ../..
+      dockerfile: examples/yesod-minimal/Dockerfile
+    environment:
+      - OTEL_SERVICE_NAME=yesod-minimal
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - YESOD_MINIMAL_PG_CONN=host=postgres user=otel password=password
+    ports:
+      - "3000:3000"

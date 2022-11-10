@@ -74,21 +74,24 @@ instance YesodOpenTelemetryTrace site => M.MonadTracer (HandlerFor site) where
  For a route like HomeR, this function returns "HomeR".
 
  For routes with parents, this function returns e.g. "FooR.BarR.BazR".
+
+ See examples/yesod-minimal of hs-opentelemetry repository for usage.
 -}
-mkRouteToRenderer :: Name -> Map String ExpQ -> [ResourceTree String] -> Q [Dec]
+mkRouteToRenderer
+  :: Name -- ^ Yesod site type
+  -> Map String ExpQ -- ^ map from subsites type names to their @routeToRenderer@ Template Haskell expressions
+  -> [ResourceTree String] -- ^ route
+  -> Q [Dec]
 mkRouteToRenderer appName subrendererExps ress = do
   let fnName = mkName "routeToRenderer"
-      t1 `arrow` t2 = ArrowT `AppT` t1 `AppT` t2
-
-  clauses <- mapM (goTree id []) ress
-
-  pure
-    [ SigD fnName ((ConT ''Route `AppT` ConT appName) `arrow` ConT ''Text)
-    , FunD fnName $ concat clauses
+  clauses <- mconcat <$> traverse (goTree id []) ress
+  sequence
+    [ sigD fnName [t|Route $(conT appName) -> Text|]
+    , funD fnName clauses
     ]
   where
-    goTree :: (Q Pat -> Q Pat) -> [String] -> ResourceTree String -> Q [Clause]
-    goTree front names (ResourceLeaf res) = pure <$> goRes front names res
+    goTree :: (Q Pat -> Q Pat) -> [String] -> ResourceTree String -> Q [Q Clause]
+    goTree front names (ResourceLeaf res) = pure [goRes front names res]
     goTree front names (ResourceParent name _check pieces trees) =
       mconcat <$> traverse (goTree front' newNames) trees
       where
@@ -118,16 +121,20 @@ mkRouteToRenderer appName subrendererExps ress = do
             Nothing -> fail $ "mkRouteToRenderer: not found: " ++ subsiteType
 
 
-mkRouteToPattern :: Name -> Map String ExpQ -> [ResourceTree String] -> Q [Dec]
+{- | Template Haskell to generate a function named @routeToPattern@.
+
+ See examples/yesod-minimal of hs-opentelemetry repository for usage.
+-}
+mkRouteToPattern
+  :: Name -- ^ Yesod site type
+  -> Map String ExpQ -- ^ map from subsites type names to their @routeToRenderer@ Template Haskell expressions
+  -> [ResourceTree String] -- ^ route
+  -> Q [Dec]
 mkRouteToPattern appName subpatternExps ress = do
   let fnName = mkName "routeToPattern"
-      t1 `arrow` t2 = ArrowT `AppT` t1 `AppT` t2
-
-  clauses <- mapM mkClause $ flatten ress
-
-  pure
-    [ SigD fnName ((ConT ''Route `AppT` ConT appName) `arrow` ConT ''Text)
-    , FunD fnName clauses
+  sequence
+    [ sigD fnName [t|Route $(conT appName) -> Text|]
+    , funD fnName $ mkClause <$> flatten ress
     ]
   where
     isDynamic Dynamic {} = True
@@ -184,8 +191,8 @@ renderPattern FlatResource {..} =
 
 
 data RouteRenderer site = RouteRenderer
-  { nameRender :: Route site -> T.Text
-  , pathRender :: Route site -> T.Text
+  { nameRender :: Route site -> T.Text -- ^ give @routeToRenderer@ to
+  , pathRender :: Route site -> T.Text -- ^ give @routeToPattern@ to
   }
 
 
