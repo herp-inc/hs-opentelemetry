@@ -77,11 +77,14 @@ instance YesodOpenTelemetryTrace site => M.MonadTracer (HandlerFor site) where
 
  See examples/yesod-minimal of hs-opentelemetry repository for usage.
 -}
-mkRouteToRenderer
-  :: Name -- ^ Yesod site type
-  -> Map String ExpQ -- ^ map from subsites type names to their @routeToRenderer@ Template Haskell expressions
-  -> [ResourceTree String] -- ^ route
-  -> Q [Dec]
+mkRouteToRenderer ::
+  -- | Yesod site type
+  Name ->
+  -- | map from subsites type names to their @routeToRenderer@ Template Haskell expressions
+  Map String ExpQ ->
+  -- | route
+  [ResourceTree String] ->
+  Q [Dec]
 mkRouteToRenderer appName subrendererExps ress = do
   let fnName = mkName "routeToRenderer"
   clauses <- mconcat <$> traverse (goTree id []) ress
@@ -125,11 +128,14 @@ mkRouteToRenderer appName subrendererExps ress = do
 
  See examples/yesod-minimal of hs-opentelemetry repository for usage.
 -}
-mkRouteToPattern
-  :: Name -- ^ Yesod site type
-  -> Map String ExpQ -- ^ map from subsites type names to their @routeToRenderer@ Template Haskell expressions
-  -> [ResourceTree String] -- ^ route
-  -> Q [Dec]
+mkRouteToPattern ::
+  -- | Yesod site type
+  Name ->
+  -- | map from subsites type names to their @routeToRenderer@ Template Haskell expressions
+  Map String ExpQ ->
+  -- | route
+  [ResourceTree String] ->
+  Q [Dec]
 mkRouteToPattern appName subpatternExps ress = do
   let fnName = mkName "routeToPattern"
   sequence
@@ -191,8 +197,10 @@ renderPattern FlatResource {..} =
 
 
 data RouteRenderer site = RouteRenderer
-  { nameRender :: Route site -> T.Text -- ^ give @routeToRenderer@ to
-  , pathRender :: Route site -> T.Text -- ^ give @routeToPattern@ to
+  { nameRender :: Route site -> T.Text
+  -- ^ give @routeToRenderer@ to
+  , pathRender :: Route site -> T.Text
+  -- ^ give @routeToPattern@ to
   }
 
 
