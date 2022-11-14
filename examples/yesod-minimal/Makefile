@@ -4,7 +4,7 @@ server.run:
 
 .PHONY: app.run
 app.run: bin/yesod-minimal
-	bin/yesod-minimal $(YESOD_MINIMAL_OPTS)
+	OTEL_SERVICE_NAME=yesod-minimal bin/yesod-minimal $(YESOD_MINIMAL_OPTS)
 
 bin/yesod-minimal:
 	stack install --local-bin-path ./bin $(CABAL_OPTS) yesod-minimal:exe:yesod-minimal

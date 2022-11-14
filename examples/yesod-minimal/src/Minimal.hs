@@ -43,6 +43,8 @@ import OpenTelemetry.Propagator.W3CBaggage
 import OpenTelemetry.Propagator.W3CTraceContext
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
+import Subsite (Subsite (Subsite))
+import qualified Subsite
 import UnliftIO hiding (Handler)
 import Yesod.Core (
   RenderRoute (..),
