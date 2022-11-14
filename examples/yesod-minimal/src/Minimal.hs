@@ -26,6 +26,7 @@ import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
+import Subsite (Subsite (Subsite))
 import qualified Subsite
 import UnliftIO hiding (Handler)
 import Yesod.Core (
@@ -44,6 +45,7 @@ import Yesod.Persist
 data Minimal = Minimal
   { minimalConnectionPool :: Pool SqlBackend
   , tracerProvider :: TracerProvider
+  , subsite :: Subsite
   }
 
 
@@ -52,6 +54,7 @@ $( do
           [parseRoutes|
           / RootR GET
           /api ApiR GET
+          /subsite SubsiteR Subsite subsite
         |]
     Prelude.concat
       <$> Prelude.sequence
@@ -125,7 +128,7 @@ main = do
     shutdownTracerProvider
     $ \tp -> do
       runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
-        waiApp <- toWaiApp $ Minimal pool tp
+        waiApp <- toWaiApp $ Minimal pool tp Subsite
         openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware' tp
 
         run 3000 $ openTelemetryWaiMiddleware waiApp

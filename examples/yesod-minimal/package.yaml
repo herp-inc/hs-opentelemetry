@@ -40,8 +40,3 @@ executables:
   yesod-minimal:
     main: Minimal
     source-dirs: src
-    dependencies:
-    - yesod-minimal
-
-library:
-    source-dirs: src
