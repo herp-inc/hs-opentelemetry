@@ -40,3 +40,4 @@ executables:
   yesod-minimal:
     main: Minimal
     source-dirs: src
+    ghc-options: -threaded -with-rtsopts=-N

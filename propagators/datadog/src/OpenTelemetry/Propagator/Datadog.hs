@@ -4,8 +4,6 @@
 
 module OpenTelemetry.Propagator.Datadog
   ( datadogTraceContextPropagator
-  , convertOpenTelemetrySpanIdToDatadogSpanId
-  , convertOpenTelemetryTraceIdToDatadogTraceId
   ) where
 
 import           OpenTelemetry.Common                      (TraceFlags (TraceFlags))

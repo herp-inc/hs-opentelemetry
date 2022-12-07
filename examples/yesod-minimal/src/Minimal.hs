@@ -39,6 +39,9 @@ import Yesod.Core (
  )
 import Yesod.Core.Handler
 import Yesod.Persist
+import qualified Data.ByteString.Char8 as B
+import Data.Maybe (fromMaybe)
+import System.Environment (lookupEnv)
 
 
 -- | This is my data type. There are many like it, but this one is mine.
@@ -123,11 +126,12 @@ getApiR = do
 
 main :: IO ()
 main = do
+  pgsqlConnConfig <- B.pack . fromMaybe "host=localhost dbname=otel" <$> lookupEnv "YESOD_MINIMAL_PG_CONN"
   bracket
     initializeTracerProvider
     shutdownTracerProvider
     $ \tp -> do
-      runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
+      runNoLoggingT $ withPostgresqlPool pgsqlConnConfig 5 $ \pool -> liftIO $ do
         waiApp <- toWaiApp $ Minimal pool tp Subsite
         openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware' tp
 
