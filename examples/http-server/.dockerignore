@@ -1,7 +1,0 @@
-/.dockerignore
-/.editorconfig
-/.gitignore
-/.stack-work/
-/bin/
-/Dockerfile
-/otelcol.yaml

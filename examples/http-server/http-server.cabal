@@ -10,6 +10,7 @@ executable http-server
   build-depends: base == 4.*,
                  hs-opentelemetry-api,
                  hs-opentelemetry-sdk,
+                 hs-opentelemetry-propagator-datadog,
                  hs-opentelemetry-propagator-w3c,
                  hs-opentelemetry-instrumentation-wai,
                  hs-opentelemetry-instrumentation-http-client,
@@ -21,4 +22,6 @@ executable http-server
                  warp
   ghc-options: -Wall
                -Wcompat
+               -threaded
+               -with-rtsopts=-N
   default-language: Haskell2010

@@ -1,19 +1,17 @@
-DOCKER_TAG = hs-opentelemetry-examples-http-server
-
-.PHONY: client.run
-client.run: bin/http-server
-	bin/http-server
-
 .PHONY: server.run
 server.run:
-	docker-compose up
+	docker compose --file ../../docker-compose.yaml up $(DOCKER_COMPOSE_OPTS)
 
-bin/http-server: http-server.cabal main.hs
+.PHONY: server.stop
+server.stop:
+	docker compose --file ../../docker-compose.yaml down $(DOCKER_COMPOSE_OPTS)
+
+.PHONY: app.run
+app.run: bin/http-server
+	OTEL_SERVICE_NAME=http-server bin/http-server $(HTTP_SERVER_OPTS)
+
+bin/http-server:
 	stack install --local-bin-path ./bin http-server:exe:http-server
-
-.PHONY: docker.build
-docker.build:
-	$(MAKE) -C ../.. docker.examples.http-server.build DOCKER_EXAMPLES_HTTP_SERVER_TAG=$(DOCKER_TAG)
 
 .PHONY: clean
 clean:

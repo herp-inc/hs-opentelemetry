@@ -142,9 +142,5 @@ sdk/hs-opentelemetry-sdk.cabal: sdk/package.yaml FORCE
 utils/exceptions/hs-opentelemetry-utils-exceptions.cabal: utils/exceptions/package.yaml FORCE
 	(cd utils/exceptions; hpack)
 
-.PHONY: docker.examples.http-server.build
-docker.examples.http-server.build:
-	docker build --tag $(DOCKER_EXAMPLES_HTTP_SERVER_TAG) --file examples/http-server/Dockerfile .
-
 # Hack https://www.gnu.org/software/make/manual/html_node/Force-Targets.html
 FORCE:
