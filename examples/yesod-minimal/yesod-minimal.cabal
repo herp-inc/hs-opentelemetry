@@ -58,7 +58,7 @@ executable yesod-minimal
       Paths_yesod_minimal
   hs-source-dirs:
       src
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -main-is Minimal
+  ghc-options: -threaded -with-rtsopts=-N -main-is Minimal
   build-depends:
       base
     , bytestring
