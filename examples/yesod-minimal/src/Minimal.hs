@@ -42,6 +42,8 @@ import Yesod.Persist
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe)
 import System.Environment (lookupEnv)
+import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
+import OpenTelemetry.Processor.Batch (batchProcessor)
 
 
 -- | This is my data type. There are many like it, but this one is mine.
@@ -127,8 +129,16 @@ getApiR = do
 main :: IO ()
 main = do
   pgsqlConnConfig <- B.pack . fromMaybe "host=localhost dbname=otel" <$> lookupEnv "YESOD_MINIMAL_PG_CONN"
+  batchProcessorConfig <- detectBatchProcessorConfig
+  exporter:_ <- detectExporters
+  processor <- batchProcessor batchProcessorConfig exporter
+  (_, tracerProviderOptions) <- getTracerProviderInitializationOptions
+  let tracerProviderOptions' =
+        tracerProviderOptions
+          { tracerProviderOptionsPropagators = datadogTraceContextPropagator
+          }
   bracket
-    initializeTracerProvider
+    (createTracerProvider [processor] tracerProviderOptions')
     shutdownTracerProvider
     $ \tp -> do
       runNoLoggingT $ withPostgresqlPool pgsqlConnConfig 5 $ \pool -> liftIO $ do

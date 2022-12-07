@@ -90,6 +90,7 @@ module OpenTelemetry.Trace
   , getTracerProviderInitializationOptions'
   , shutdownTracerProvider
   , detectBatchProcessorConfig
+  , detectExporters
   -- ** Getting / setting the global 'TracerProvider'
   , getGlobalTracerProvider
   , setGlobalTracerProvider

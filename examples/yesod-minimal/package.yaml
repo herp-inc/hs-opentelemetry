@@ -35,6 +35,7 @@ dependencies:
 - hs-opentelemetry-instrumentation-postgresql-simple
 - hs-opentelemetry-propagator-w3c
 - hs-opentelemetry-exporter-otlp
+- hs-opentelemetry-propagator-datadog
 
 executables:
   yesod-minimal:
