@@ -84,6 +84,9 @@ cradle:
     - path: "propagators/datadog/test/spec"
       component: "hs-opentelemetry-propagator-datadog:test:spec"
 
+    - path: "propagators/datadog/old-src"
+      component: "hs-opentelemetry-propagator-datadog:test:spec"
+
     - path: "propagators/datadog/benchmark/header-codec/main.hs"
       component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
 

@@ -58,7 +58,9 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   hs-source-dirs: test/spec
+                  old-src
   other-modules: OpenTelemetry.Propagator.Datadog.InternalSpec
+                 Old
   build-depends: hs-opentelemetry-propagator-datadog,
                  hs-opentelemetry-api,
                  bytestring,
@@ -74,8 +76,9 @@ benchmark header-codec
   import: common
   type: exitcode-stdio-1.0
   main-is: main.hs
-  other-modules:
+  other-modules: Old
   hs-source-dirs: benchmark/header-codec
+                  old-src
   build-depends: hs-opentelemetry-propagator-datadog,
                  hs-opentelemetry-api,
                  bytestring,
