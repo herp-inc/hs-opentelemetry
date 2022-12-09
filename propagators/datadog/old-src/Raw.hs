@@ -1,34 +1,28 @@
+{-# LANGUAGE BangPatterns       #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE Strict             #-}
 
--- | Conversion of the hs-opentelemetry internal representation of the trace ID and the span ID and the Datadog header representation of them each other.
---
--- +----------+-----------------+----------------+
--- |          | Trace ID        | Span ID        |
--- +----------+-----------------+----------------+
--- | Internal | 128-bit integer | 64-bit integer |
--- +----------+-----------------+----------------+
--- | Datadog  | ASCII text of   | ASCII text of  |
--- | Header   | 64-bit integer  | 64-bit integer |
--- +----------+-----------------+----------------+
-module OpenTelemetry.Propagator.Datadog.Internal
+module Raw
   ( newTraceIdFromHeader
   , newSpanIdFromHeader
   , newHeaderFromTraceId
   , newHeaderFromSpanId
+  , showWord64BS
+  , readWord64BS
+  , asciiWord8ToWord8
+  , word8ToAsciiWord8
   ) where
 
-import           Data.Bits                      (Bits (shift))
+import           Control.Monad.ST               (ST, runST)
+import           Data.Bits                      (Bits (complement, shift, (.&.)))
 import           Data.ByteString                (ByteString)
-import qualified Data.ByteString.Builder        as BB
 import qualified Data.ByteString.Internal       as BI
-import qualified Data.ByteString.Lazy           as BL
 import           Data.ByteString.Short          (ShortByteString)
-import qualified Data.ByteString.Short          as SB
 import qualified Data.ByteString.Short.Internal as SBI
 import qualified Data.Char                      as C
-import           Data.Primitive.ByteArray       (ByteArray (ByteArray), indexByteArray)
+import           Data.Primitive.ByteArray       (ByteArray (ByteArray), MutableByteArray, freezeByteArray,
+                                                 indexByteArray, newByteArray, writeByteArray)
 import           Data.Primitive.Ptr             (writeOffPtr)
 import           Data.Word                      (Word64, Word8)
 import           Foreign.ForeignPtr             (withForeignPtr)
@@ -36,22 +30,51 @@ import           Foreign.Storable               (peekElemOff)
 import           System.IO.Unsafe               (unsafeDupablePerformIO)
 
 newTraceIdFromHeader
-  :: ByteString -- ^ ASCII text of 64-bit integer
-  -> ShortByteString -- ^ 128-bit integer
+  :: ByteString -- ^ ASCII numeric text
+  -> ShortByteString
 newTraceIdFromHeader bs =
   let
-    w64 = readWord64BS bs
-    builder = BB.word64BE 0 <> BB.word64BE w64
-  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+    len = 16 :: Int
+    !(ByteArray ba) =
+      runST $ do
+        mba <- newByteArray len
+        let w64 = readWord64BS bs
+        writeByteArray mba 0 (0 :: Word64) -- fill zeros to one upper Word64-size area
+        writeByteArrayNbo mba 1 w64 -- offset one Word64-size
+        freezeByteArray mba 0 len
+  in SBI.SBS ba
 
 newSpanIdFromHeader
-  :: ByteString -- ^ ASCII text of 64-bit integer
-  -> ShortByteString -- ^ 64-bit integer
+  :: ByteString -- ^ ASCII numeric text
+  -> ShortByteString
 newSpanIdFromHeader bs =
   let
-    w64 = readWord64BS bs
-    builder = BB.word64BE w64
-  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+    len = 8 :: Int
+    !(ByteArray ba) =
+      runST $ do
+        mba <- newByteArray len
+        let w64 = readWord64BS bs
+        writeByteArrayNbo mba 0 w64
+        freezeByteArray mba 0 len
+  in SBI.SBS ba
+
+-- | Write a primitive value to the byte array with network-byte-order (big-endian).
+-- The offset is given in elements of type @a@ rather than in bytes.
+writeByteArrayNbo :: MutableByteArray s -> Int -> Word64 -> ST s ()
+writeByteArrayNbo mba offset value = do
+  writeByteArray mba offset (0 :: Word64)
+  loop 0 value
+  where
+    loop _ 0 = pure ()
+    loop 8 _ = pure ()
+    loop n v = do
+      let
+        -- equivelent:
+        --   (p, q) = v `divMod` (2 ^ (8 :: Int))
+        p = shift v (-8)
+        q = v .&. complement (shift p 8)
+      writeByteArray mba (8 * (offset + 1) - n - 1) (fromIntegral q :: Word8)
+      loop (n + 1) p
 
 readWord64BS :: ByteString -> Word64
 readWord64BS (BI.PS fptr _ len) =
@@ -71,16 +94,12 @@ readWord64BS (BI.PS fptr _ len) =
 asciiWord8ToWord8 :: Word8 -> Word8
 asciiWord8ToWord8 b = b - fromIntegral (C.ord '0')
 
-newHeaderFromTraceId
-  :: ShortByteString -- ^ 128-bit integer
-  -> ByteString -- ^ ASCII text of 64-bit integer
+newHeaderFromTraceId :: ShortByteString -> ByteString
 newHeaderFromTraceId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 1
   in showWord64BS w64
 
-newHeaderFromSpanId
-  :: ShortByteString -- ^ 64-bit integer
-  -> ByteString -- ^ ASCII text of 64-bit integer
+newHeaderFromSpanId :: ShortByteString -> ByteString
 newHeaderFromSpanId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 0
   in showWord64BS w64

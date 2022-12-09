@@ -60,12 +60,14 @@ test-suite spec
   hs-source-dirs: test/spec
                   old-src
   other-modules: OpenTelemetry.Propagator.Datadog.InternalSpec
-                 Old
+                 Raw
+                 String
   build-depends: hs-opentelemetry-propagator-datadog,
                  hs-opentelemetry-api,
                  bytestring,
                  hspec,
                  pretty-hex,
+                 primitive,
                  QuickCheck
   ghc-options: -threaded
                -rtsopts
@@ -76,7 +78,8 @@ benchmark header-codec
   import: common
   type: exitcode-stdio-1.0
   main-is: main.hs
-  other-modules: Old
+  other-modules: Raw
+                 String
   hs-source-dirs: benchmark/header-codec
                   old-src
   build-depends: hs-opentelemetry-propagator-datadog,

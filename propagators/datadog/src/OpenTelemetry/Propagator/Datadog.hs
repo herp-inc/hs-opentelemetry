@@ -56,7 +56,7 @@ datadogTraceContextPropagator =
               parentIdValue = (\(SpanId b) -> newHeaderFromSpanId b) spanId
             samplingPriority <-
               case lookup (TS.Key samplingPriorityKey) traceState of
-                Nothing -> pure "1" -- when an origin of the trace
+                Nothing           -> pure "1" -- when an origin of the trace
                 Just (TS.Value p) -> pure $ BC.pack $ T.unpack p
             pure
               $ (traceIdKey, traceIdValue)
