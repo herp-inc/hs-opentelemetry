@@ -59,7 +59,8 @@ test-suite spec
   main-is: Spec.hs
   hs-source-dirs: test/spec
                   old-src
-  other-modules: OpenTelemetry.Propagator.Datadog.InternalSpec
+  other-modules: OpenTelemetry.Propagator.DatadogSpec
+                 OpenTelemetry.Propagator.Datadog.InternalSpec
                  Raw
                  String
   build-depends: hs-opentelemetry-propagator-datadog,

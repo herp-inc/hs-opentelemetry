@@ -4,23 +4,35 @@
 
 module OpenTelemetry.Propagator.Datadog
   ( datadogTraceContextPropagator
+  , convertOpenTelemetrySpanIdToDatadogSpanId
+  , convertOpenTelemetryTraceIdToDatadogTraceId
   ) where
 
 import           OpenTelemetry.Common                      (TraceFlags (TraceFlags))
-import           OpenTelemetry.Context                     (Context, insertSpan, lookupSpan)
+import           OpenTelemetry.Context                     (Context, insertSpan,
+                                                            lookupSpan)
 import           OpenTelemetry.Propagator                  (Propagator (Propagator, extractor, injector, propagatorNames))
-import           OpenTelemetry.Propagator.Datadog.Internal (newHeaderFromSpanId, newHeaderFromTraceId,
-                                                            newSpanIdFromHeader, newTraceIdFromHeader)
+import           OpenTelemetry.Propagator.Datadog.Internal (indexByteArrayNbo,
+                                                            newHeaderFromSpanId,
+                                                            newHeaderFromTraceId,
+                                                            newSpanIdFromHeader,
+                                                            newTraceIdFromHeader)
 import           OpenTelemetry.Trace                       (SpanContext (SpanContext, isRemote, spanId, traceFlags, traceId, traceState))
-import           OpenTelemetry.Trace.Core                  (getSpanContext, wrapSpanContext)
-import           OpenTelemetry.Trace.Id                    (SpanId (SpanId), TraceId (TraceId))
+import           OpenTelemetry.Trace.Core                  (getSpanContext,
+                                                            wrapSpanContext)
+import           OpenTelemetry.Trace.Id                    (SpanId (SpanId),
+                                                            TraceId (TraceId))
 import           OpenTelemetry.Trace.TraceState            (TraceState (TraceState))
 import qualified OpenTelemetry.Trace.TraceState            as TS
 
-import qualified Data.ByteString.Char8 as BC
-import           Data.String           (IsString)
-import qualified Data.Text             as T
-import           Network.HTTP.Types    (RequestHeaders, ResponseHeaders)
+import qualified Data.ByteString.Char8                     as BC
+import qualified Data.ByteString.Short.Internal            as SBI
+import           Data.Primitive                            (ByteArray (ByteArray))
+import           Data.String                               (IsString)
+import qualified Data.Text                                 as T
+import           Data.Word                                 (Word64)
+import           Network.HTTP.Types                        (RequestHeaders,
+                                                            ResponseHeaders)
 
 -- Reference: bi-directional conversion of IDs of Open Telemetry and ones of Datadog
 -- - https://docs.datadoghq.com/ja/tracing/connect_logs_and_traces/opentelemetry/
@@ -69,3 +81,9 @@ datadogTraceContextPropagator =
     traceIdKey = "x-datadog-trace-id"
     parentIdKey = "x-datadog-parent-id"
     samplingPriorityKey = "x-datadog-sampling-priority"
+
+convertOpenTelemetrySpanIdToDatadogSpanId :: SpanId -> Word64
+convertOpenTelemetrySpanIdToDatadogSpanId (SpanId (SBI.SBS a)) = indexByteArrayNbo (ByteArray a) 0
+
+convertOpenTelemetryTraceIdToDatadogTraceId :: TraceId -> Word64
+convertOpenTelemetryTraceIdToDatadogTraceId (TraceId (SBI.SBS a)) = indexByteArrayNbo (ByteArray a) 1

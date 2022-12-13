@@ -17,6 +17,7 @@ module OpenTelemetry.Propagator.Datadog.Internal
   , newSpanIdFromHeader
   , newHeaderFromTraceId
   , newHeaderFromSpanId
+  , indexByteArrayNbo
   ) where
 
 import           Data.Bits                      (Bits (shift))
@@ -55,6 +56,7 @@ newSpanIdFromHeader bs =
 
 readWord64BS :: ByteString -> Word64
 readWord64BS (BI.PS fptr _ len) =
+  -- Safe.
   unsafeDupablePerformIO $
     withForeignPtr fptr readWord64Ptr
   where
@@ -85,7 +87,11 @@ newHeaderFromSpanId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 0
   in showWord64BS w64
 
-indexByteArrayNbo :: ByteArray -> Int -> Word64
+-- | Read 'ByteArray' to 'Word64' with network-byte-order.
+indexByteArrayNbo
+  :: ByteArray
+  -> Int -- ^ Offset in 'Word64'-size unit
+  -> Word64
 indexByteArrayNbo ba offset =
   loop 0 0
   where
@@ -94,6 +100,7 @@ indexByteArrayNbo ba offset =
 
 showWord64BS :: Word64 -> ByteString
 showWord64BS v =
+  -- Safe.
   unsafeDupablePerformIO $
     BI.createUptoN 20 writeWord64Ptr -- 20 = length (show (maxBound :: Word64))
   where
