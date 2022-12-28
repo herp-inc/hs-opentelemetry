@@ -8,6 +8,7 @@ packages: api
           propagators/w3c
           instrumentation/conduit
           instrumentation/cloudflare
+          instrumentation/hedis
           instrumentation/http-client
           instrumentation/persistent
           instrumentation/persistent-mysql
