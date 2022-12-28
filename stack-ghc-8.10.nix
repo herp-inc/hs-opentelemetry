@@ -1,6 +1,6 @@
 let
   pkgs = import ./nix/pkgs.nix {};
-  ghc = import ./nix/ghc.nix { ghcVersion = "902"; };
+  ghc = import ./nix/ghc.nix { ghcVersion = "8107"; };
 in
   with pkgs;
   haskell.lib.buildStackProject {

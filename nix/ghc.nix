@@ -1,6 +1,5 @@
-{ pkgs ? import ./pkgs.nix {} }:
+{ pkgs ? import ./pkgs.nix {}, ghcVersion }:
 rec {
   ghc = pkgs.haskell.compiler.${compiler};
   compiler = "ghc${ghcVersion}";
-  ghcVersion = "902";
 }

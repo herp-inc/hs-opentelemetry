@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: nightly-2022-04-04
+resolver: nightly-2022-07-31
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -41,14 +41,18 @@ packages:
 # - exporters/prometheus
 # - propagators/b3
 # - propagators/jaeger
+- propagators/datadog
 - propagators/w3c
 - instrumentation/conduit
 - instrumentation/cloudflare
+- instrumentation/hedis
 - instrumentation/http-client
 - instrumentation/persistent
+- instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
 - instrumentation/yesod
 - instrumentation/wai
+- examples/http-server
 - examples/yesod-minimal
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
@@ -77,8 +81,8 @@ extra-deps:
 # extra-package-dbs: []
 
 # Control whether we use the GHC we find on the path
-# system-ghc: true
-#
+system-ghc: true
+
 # Require a specific version of stack, using version ranges
 # require-stack-version: -any # Default
 # require-stack-version: ">=2.7"
@@ -93,3 +97,9 @@ extra-deps:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+nix:
+  enable: true
+  shell-file: stack-ghc-9.2.nix
+  pure: false
+  add-gc-roots: false

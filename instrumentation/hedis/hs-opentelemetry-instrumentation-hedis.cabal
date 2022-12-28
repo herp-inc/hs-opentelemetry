@@ -18,7 +18,7 @@ library
   exposed-modules: OpenTelemetry.Instrumentation.Hedis
   build-depends: hs-opentelemetry-api,
                  hs-opentelemetry-sdk,
-                 hedis,
+                 hedis >= 0.15.1,
                  mtl,
                  unliftio-core
   ghc-options: -Wcompat
