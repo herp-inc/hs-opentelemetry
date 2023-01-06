@@ -45,12 +45,14 @@ packages:
 - propagators/w3c
 - instrumentation/conduit
 - instrumentation/cloudflare
+- instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/persistent
 - instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
 - instrumentation/yesod
 - instrumentation/wai
+- examples/http-server
 - examples/yesod-minimal
 - examples/yesod-subsite
 - utils/exceptions
