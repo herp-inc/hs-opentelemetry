@@ -9,15 +9,14 @@
 
 module Minimal where
 
-import Subsite ( Subsite(Subsite), resourcesSubsite, Route(SubHomeR) )
-import qualified Subsite
-
-import qualified Data.ByteString.Lazy as L
 import Conduit
 import Control.Monad.IO.Class
 import Control.Monad.Logger
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
 import Data.Conduit.List as CL
+import qualified Data.Map as M
+import Data.Maybe (fromMaybe)
 import Data.Pool (Pool, withResource)
 import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8)
@@ -39,12 +38,14 @@ import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttribute
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
 import OpenTelemetry.Processor.Batch
+import OpenTelemetry.Processor.Batch (batchProcessor)
 import OpenTelemetry.Propagator.W3CBaggage
 import OpenTelemetry.Propagator.W3CTraceContext
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
-import Subsite (Subsite (Subsite))
+import Subsite (Route (SubHomeR), Subsite (Subsite), resourcesSubsite)
 import qualified Subsite
+import System.Environment (lookupEnv)
 import UnliftIO hiding (Handler)
 import Yesod.Core (
   RenderRoute (..),
@@ -104,6 +105,7 @@ instance YesodPersist Minimal where
           Nothing -> pure []
           Just pgConn -> staticConnectionAttributes pgConn
         wrapSqlBackend staticAttrs conn
+
 
 
 getRootR :: Handler Text
