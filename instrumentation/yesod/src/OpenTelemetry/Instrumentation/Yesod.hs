@@ -12,15 +12,14 @@
 - "http" - to use the stable conventions
 - "http/dup" - to emit both the old and the stable conventions
 Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+
+Let @Site@ be following to use in examples:
+
+@
+newtype Site = Site { siteTracerProvider :: TracerProvider }
+@
 -}
 module OpenTelemetry.Instrumentation.Yesod (
-  {-
-  Let @Site@ be following to use in examples:
-
-  @
-  newtype Site = Site { siteTracerProvider :: TracerProvider }
-  @
-  -}
   openTelemetryYesodMiddleware,
   RouteRenderer (..),
   mkRouteToRenderer,
