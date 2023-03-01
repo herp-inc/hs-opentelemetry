@@ -1,4 +1,3 @@
-{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -21,9 +20,6 @@
  more lower-level, but more flexible.
 -}
 module OpenTelemetry.Trace.Monad (
-  Span,
-  SpanArguments (..),
-  Tracer,
   inSpan,
   inSpan',
   OpenTelemetry.Trace.Monad.inSpan'',
@@ -45,25 +41,7 @@ import Control.Monad.Reader (ReaderT)
 import Control.Monad.Trans (MonadTrans (lift))
 import Data.Text (Text)
 import GHC.Stack
-import Control.Monad.Trans (MonadTrans(lift))
-import Control.Monad.Trans.Accum (AccumT)
-import Control.Monad.Cont (ContT)
-import Control.Monad.IO.Unlift
-import Control.Monad.Identity (IdentityT)
-import qualified Control.Monad.RWS.Lazy as L
-import qualified Control.Monad.RWS.Strict as S
-import Control.Monad.Reader (ReaderT)
-import qualified Control.Monad.State.Lazy as L
-import qualified Control.Monad.State.Strict as S
-import Control.Monad.Trans (MonadTrans (lift))
-import Control.Monad.Trans.Accum (AccumT)
-import qualified Control.Monad.Trans.RWS.CPS as C
-import Control.Monad.Trans.Select (SelectT)
-import qualified Control.Monad.Writer.Lazy as L
-import qualified Control.Monad.Writer.Strict as S
-import Data.Text (Text)
-import GHC.Stack
-import OpenTelemetry.Trace.Core (Span, SpanArguments (SpanArguments, attributes, kind, links, startTime), Tracer, inSpan'')
+import OpenTelemetry.Trace.Core (Span, Tracer, inSpan'', SpanArguments)
 
 
 -- | This is generally scoped by Monad stack to do different things
