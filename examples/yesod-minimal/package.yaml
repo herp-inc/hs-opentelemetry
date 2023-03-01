@@ -5,7 +5,6 @@ dependencies:
 - base
 - bytestring
 - conduit
-- containers
 - yesod-core
 - yesod-form
 - http-client
@@ -39,4 +38,8 @@ executables:
   yesod-minimal:
     main: Minimal
     source-dirs: src
-    ghc-options: -threaded -with-rtsopts=-N
+    dependencies:
+    - yesod-minimal
+
+library:
+    source-dirs: src
