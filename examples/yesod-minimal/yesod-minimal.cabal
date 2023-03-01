@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.34.5.
 --
 -- see: https://github.com/sol/hpack
 
@@ -11,8 +11,6 @@ build-type:     Simple
 library
   exposed-modules:
       Minimal
-      Subsite
-      Subsite.Data
   other-modules:
       Paths_yesod_minimal
   hs-source-dirs:
@@ -51,8 +49,6 @@ library
 executable yesod-minimal
   main-is: Minimal.hs
   other-modules:
-      Subsite
-      Subsite.Data
       Paths_yesod_minimal
   hs-source-dirs:
       src
