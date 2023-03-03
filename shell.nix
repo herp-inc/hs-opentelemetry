@@ -16,7 +16,6 @@ in
       haskell.packages.${compiler}.implicit-hie
       haskell.packages.${compiler}.haskell-language-server
       haskell.packages.${compiler}.hspec-discover
-      haskell.packages.${compiler}.hlint
       # haskell.packages.${compiler}.fourmolu
 
       libffi
