@@ -1,7 +1,6 @@
 .direnv/
 .vscode/
 .stack-work/
-dist-newstyle/
 .DS_Store
 *~
 client_session_key.aes
