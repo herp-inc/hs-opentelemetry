@@ -10,10 +10,13 @@ server.stop:
 app.run: bin/yesod-subsite
 	OTEL_SERVICE_NAME=yesod-subsite bin/yesod-subsite $(YESOD_MINIMAL_OPTS)
 
-bin/yesod-subsite:
+bin/yesod-subsite: FORCE
 	stack install --local-bin-path ./bin $(CABAL_OPTS) yesod-subsite:exe:yesod-subsite
 
 .PHONY: clean
 clean:
 	stack clean
 	$(RM) bin/yesod-subsite
+
+# Hack https://www.gnu.org/software/make/manual/html_node/Force-Targets.html
+FORCE:
