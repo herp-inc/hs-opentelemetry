@@ -9,6 +9,7 @@ packages:
   , propagators/w3c
   , instrumentation/conduit
   , instrumentation/cloudflare
+  , instrumentation/hedis
   , instrumentation/hspec
   , instrumentation/http-client
   , instrumentation/persistent
@@ -21,18 +22,4 @@ packages:
   , examples/yesod-subsite
   , utils/exceptions
 
--- https://github.com/vincenthz/hs-memory/pull/93
-source-repository-package
-    type: git
-    location: https://github.com/parsonsmatt/hs-memory
-    tag: 296b79424854eae293f6ba09b5308a0bf4dfd6d5
-
-allow-newer:
-    http-api-data:base
-  , postgresql-simple:base
-  , postgresql-simple:template-haskell
-  , postgresql-libpq:Cabal
-  , postgresql-libpq:base
-
-constraints:
-    postgresql-simple == 0.6.4
+with-compiler: ghc-9.0.2

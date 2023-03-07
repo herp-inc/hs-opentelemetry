@@ -48,6 +48,9 @@ cradle:
     - path: "instrumentation/conduit/test"
       component: "hs-opentelemetry-instrumentation-conduit:test:hs-opentelemetry-instrumentation-conduit-test"
 
+    - path: "instrumentation/hedis/src"
+      component: "hs-opentelemetry-instrumentation-hedis:lib"
+
     - path: "instrumentation/hspec/src"
       component: "hs-opentelemetry-instrumentation-hspec:lib"
 

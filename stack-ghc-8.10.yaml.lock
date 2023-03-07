@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: hedis-0.15.1@sha256:64c8c26071222e6c8b25b59bfabd0fffde465cb65714ebc0351f991c809ad7ee,6312
+    pantry-tree:
+      sha256: d01cd5f335fcceb1ee537d0a8b8586332a65de2058ff421171593d6c5dce294f
+      size: 1776
+  original:
+    hackage: hedis-0.15.1@sha256:64c8c26071222e6c8b25b59bfabd0fffde465cb65714ebc0351f991c809ad7ee,6312
+- completed:
     hackage: persistent-2.13.3.0@sha256:89a4a286ec3739d452f67332a03a392aa57c3e97237b61efcd5b99d50aae9cfc,6762
     pantry-tree:
       sha256: debd3496e44bf01264de8bc0d3da92991c1550632fe1ef66818392f4c9955323
@@ -48,7 +55,7 @@ packages:
     hackage: thread-utils-finalizers-0.1.0.0@sha256:a8435240bfc0ae96c94704d2986699a11a395c496f9a7f2e5f5d729a0b967549,1381
 snapshots:
 - completed:
-    sha256: 8699812d2b2c1f83d6ad1261de9cf628ed36a1cfc14f19d67188e005e7a3a39d
-    size: 586106
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/20.yaml
-  original: lts-18.20
+    sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
+    size: 590100
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
+  original: lts-18.28

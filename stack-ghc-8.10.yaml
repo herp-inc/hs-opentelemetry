@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-18.20
+resolver: lts-18.28
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -45,6 +45,7 @@ packages:
 - propagators/w3c
 - instrumentation/conduit
 - instrumentation/cloudflare
+- instrumentation/hedis
 - instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/persistent
@@ -67,6 +68,7 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
+- hedis-0.15.1@sha256:64c8c26071222e6c8b25b59bfabd0fffde465cb65714ebc0351f991c809ad7ee,6312
 - persistent-2.13.3.0@sha256:89a4a286ec3739d452f67332a03a392aa57c3e97237b61efcd5b99d50aae9cfc,6762
 - persistent-postgresql-2.13.4.0@sha256:7fc0ffc4a591c0355c8ad793bc6de08c13321c81a3fb748c9a23448ac88d987a,3686
 - proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
