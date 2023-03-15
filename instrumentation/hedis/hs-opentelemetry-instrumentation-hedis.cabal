@@ -12,14 +12,27 @@ common common
     ghc-options: -Wcompat
   default-language: Haskell2010
 
+custom-setup
+  setup-depends:
+    base,
+    Cabal,
+    directory,
+    filepath
+
 library
   import: common
-  hs-source-dirs: src
+  hs-source-dirs: src, gen
   exposed-modules: OpenTelemetry.Instrumentation.Hedis
+  other-modules: OpenTelemetry.Instrumentation.Hedis.Internal.Action
+                 OpenTelemetry.Instrumentation.Hedis.Internal.Wrapper
+  autogen-modules: OpenTelemetry.Instrumentation.Hedis.Internal.Action
   build-depends: hs-opentelemetry-api,
-                 hs-opentelemetry-sdk,
                  hedis >= 0.15.1,
+                 bytestring,
+                 iproute,
                  mtl,
+                 safe-exceptions,
+                 text,
                  unliftio-core
   ghc-options: -Wcompat
                -Wno-name-shadowing

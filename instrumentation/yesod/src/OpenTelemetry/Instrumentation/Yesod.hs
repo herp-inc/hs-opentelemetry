@@ -22,6 +22,7 @@ module OpenTelemetry.Instrumentation.Yesod (
   mkRouteToPattern,
   YesodOpenTelemetryTrace (..),
   getHandlerSpan,
+
   -- * Utilities
   getTracerWithGlobalTracerProvider,
   rheSiteL,

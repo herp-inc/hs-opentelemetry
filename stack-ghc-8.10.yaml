@@ -53,6 +53,7 @@ packages:
 - instrumentation/postgresql-simple
 - instrumentation/yesod
 - instrumentation/wai
+- examples/hedis
 - examples/http-server
 - examples/yesod-minimal
 - examples/yesod-subsite
