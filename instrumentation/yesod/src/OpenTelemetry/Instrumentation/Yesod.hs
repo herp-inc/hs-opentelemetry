@@ -65,7 +65,7 @@ class YesodOpenTelemetryTrace site where
         pure $ makeTracer tracerProvider "hs-opentelemetry-instrumentation-yesod" tracerOptions
 
 
-instance YesodOpenTelemetryTrace site => M.MonadTracer (HandlerFor site) where
+instance (YesodOpenTelemetryTrace site) => M.MonadTracer (HandlerFor site) where
   getTracer = getTracer
 
 
@@ -251,10 +251,10 @@ spanKey = unsafePerformIO V.newKey
 {-# NOINLINE spanKey #-}
 
 
-getHandlerSpan :: MonadHandler m => m (Maybe Span)
+getHandlerSpan :: (MonadHandler m) => m (Maybe Span)
 getHandlerSpan = liftHandler $ HandlerFor $ pure . V.lookup spanKey . vault . reqWaiRequest . handlerRequest
 
 
 -- | When without Open Telemetry middleware, this fails.
-getHandlerSpan' :: MonadHandler m => m Span
+getHandlerSpan' :: (MonadHandler m) => m Span
 getHandlerSpan' = liftHandler $ HandlerFor $ pure . fromJust . V.lookup spanKey . vault . reqWaiRequest . handlerRequest

@@ -1,10 +1,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module OpenTelemetry.TraceSpec where
 
 import Control.Monad
-import Data.Int
 import Data.IORef
+import Data.Int
 import Data.Text (Text)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Trace
@@ -13,15 +14,16 @@ import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.Id.Generator
 import OpenTelemetry.Trace.Id.Generator.Default
 import qualified OpenTelemetry.Trace.TraceState as TraceState
-import Test.Hspec
 import System.Clock
+import Test.Hspec
+
 
 asIO :: IO a -> IO a
 asIO = id
 
+
 spec :: Spec
 spec = describe "Trace" $ do
-
   describe "TracerProvider" $ do
     specify "Create TracerProvider" $ do
       void (createTracerProvider [] (emptyTracerProviderOptions :: TracerProviderOptions) :: IO TracerProvider)
@@ -30,7 +32,7 @@ spec = describe "Trace" $ do
       void $ getTracer p "woo" tracerOptions
     specify "Get a Tracer with schema_url" $ asIO $ do
       p <- getGlobalTracerProvider
-      void $ getTracer p "woo" (tracerOptions { tracerSchema = Just "https://woo.com" })
+      void $ getTracer p "woo" (tracerOptions {tracerSchema = Just "https://woo.com"})
     specify "Safe for concurrent calls" pending
     specify "Shutdown" pending
     specify "ForceFlush" pending
@@ -62,15 +64,16 @@ spec = describe "Trace" $ do
           (Right goodTrace) = bytesToTraceId "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1"
           (Right badSpan) = bytesToSpanId "\0\0\0\0\0\0\0\0"
           (Right badTrace) = bytesToTraceId "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-          validSpan = SpanContext
-            { traceFlags = defaultTraceFlags
-            , isRemote = False
-            , traceState = TraceState.empty
-            , spanId = goodSpan
-            , traceId = goodTrace
-            }
+          validSpan =
+            SpanContext
+              { traceFlags = defaultTraceFlags
+              , isRemote = False
+              , traceState = TraceState.empty
+              , spanId = goodSpan
+              , traceId = goodTrace
+              }
       validSpan `shouldSatisfy` isValid
-      (validSpan { spanId = badSpan, traceId = badTrace }) `shouldSatisfy` (not . isValid)
+      (validSpan {spanId = badSpan, traceId = badTrace}) `shouldSatisfy` (not . isValid)
     specify "IsRemote" pending
     specify "Conforms to the W3C TraceContext spec" pending
   describe "Span" $ do
@@ -135,7 +138,6 @@ spec = describe "Trace" $ do
         i <- unsafeReadSpan s
         spanStatus i `shouldBe` Ok
 
-
     specify "Safe for concurrent calls" pending
     specify "events collection size limit" pending
     specify "attribute collection size limit" pending
@@ -147,7 +149,7 @@ spec = describe "Trace" $ do
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
       addAttribute s "attr" (1.0 :: Double)
-      
+
     specify "Set order preserved" pending
     specify "String type" $ asIO $ do
       p <- getGlobalTracerProvider
@@ -177,26 +179,26 @@ spec = describe "Trace" $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
-      addAttribute s "attr" [(1 :: Int64)..10]
+      addAttribute s "attr" [(1 :: Int64) .. 10]
 
     specify "Unicode support for keys and string values" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
       addAttribute s "🚀" ("🚀" :: Text)
-      -- TODO actually get attributes out
-
+  -- TODO actually get attributes out
 
   describe "Span events" $ do
     specify "AddEvent" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
-      addEvent s $ NewEvent
-        { newEventName = "EVENT"
-        , newEventAttributes = []
-        , newEventTimestamp = Nothing
-        }
+      addEvent s $
+        NewEvent
+          { newEventName = "EVENT"
+          , newEventAttributes = []
+          , newEventTimestamp = Nothing
+          }
     specify "Add order preserved" pending
     specify "Safe for concurrent calls" pending
 
@@ -214,6 +216,3 @@ spec = describe "Trace" $ do
   specify "SpanLimits" pending
   specify "Built-in Processors implement ForceFlush spec" pending
   specify "Attribute Limits" pending
-
-
-

@@ -1,58 +1,68 @@
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE Strict             #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Strict #-}
 
--- | Conversion of the hs-opentelemetry internal representation of the trace ID and the span ID and the Datadog header representation of them each other.
---
--- +----------+-----------------+----------------+
--- |          | Trace ID        | Span ID        |
--- +----------+-----------------+----------------+
--- | Internal | 128-bit integer | 64-bit integer |
--- +----------+-----------------+----------------+
--- | Datadog  | ASCII text of   | ASCII text of  |
--- | Header   | 64-bit integer  | 64-bit integer |
--- +----------+-----------------+----------------+
-module OpenTelemetry.Propagator.Datadog.Internal
-  ( newTraceIdFromHeader
-  , newSpanIdFromHeader
-  , newHeaderFromTraceId
-  , newHeaderFromSpanId
-  , indexByteArrayNbo
-  ) where
+{- | Conversion of the hs-opentelemetry internal representation of the trace ID and the span ID and the Datadog header representation of them each other.
 
-import           Data.Bits                      (Bits (shift))
-import           Data.ByteString                (ByteString)
-import qualified Data.ByteString.Builder        as BB
-import qualified Data.ByteString.Internal       as BI
-import qualified Data.ByteString.Lazy           as BL
-import           Data.ByteString.Short          (ShortByteString)
-import qualified Data.ByteString.Short          as SB
++----------+-----------------+----------------+
+|          | Trace ID        | Span ID        |
++----------+-----------------+----------------+
+| Internal | 128-bit integer | 64-bit integer |
++----------+-----------------+----------------+
+| Datadog  | ASCII text of   | ASCII text of  |
+| Header   | 64-bit integer  | 64-bit integer |
++----------+-----------------+----------------+
+-}
+module OpenTelemetry.Propagator.Datadog.Internal (
+  newTraceIdFromHeader,
+  newSpanIdFromHeader,
+  newHeaderFromTraceId,
+  newHeaderFromSpanId,
+  indexByteArrayNbo,
+) where
+
+import Data.Bits (Bits (shift))
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Builder as BB
+import qualified Data.ByteString.Internal as BI
+import qualified Data.ByteString.Lazy as BL
+import Data.ByteString.Short (ShortByteString)
+import qualified Data.ByteString.Short as SB
 import qualified Data.ByteString.Short.Internal as SBI
-import qualified Data.Char                      as C
-import           Data.Primitive.ByteArray       (ByteArray (ByteArray), indexByteArray)
-import           Data.Primitive.Ptr             (writeOffPtr)
-import           Data.Word                      (Word64, Word8)
-import           Foreign.ForeignPtr             (withForeignPtr)
-import           Foreign.Storable               (peekElemOff)
-import           System.IO.Unsafe               (unsafeDupablePerformIO)
+import qualified Data.Char as C
+import Data.Primitive.ByteArray (ByteArray (ByteArray), indexByteArray)
+import Data.Primitive.Ptr (writeOffPtr)
+import Data.Word (Word64, Word8)
+import Foreign.ForeignPtr (withForeignPtr)
+import Foreign.Storable (peekElemOff)
+import System.IO.Unsafe (unsafeDupablePerformIO)
 
-newTraceIdFromHeader
-  :: ByteString -- ^ ASCII text of 64-bit integer
-  -> ShortByteString -- ^ 128-bit integer
+
+newTraceIdFromHeader ::
+  -- | ASCII text of 64-bit integer
+  ByteString ->
+  -- | 128-bit integer
+  ShortByteString
 newTraceIdFromHeader bs =
   let
     w64 = readWord64BS bs
     builder = BB.word64BE 0 <> BB.word64BE w64
-  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+   in
+    SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
 
-newSpanIdFromHeader
-  :: ByteString -- ^ ASCII text of 64-bit integer
-  -> ShortByteString -- ^ 64-bit integer
+
+newSpanIdFromHeader ::
+  -- | ASCII text of 64-bit integer
+  ByteString ->
+  -- | 64-bit integer
+  ShortByteString
 newSpanIdFromHeader bs =
   let
     w64 = readWord64BS bs
     builder = BB.word64BE w64
-  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+   in
+    SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+
 
 readWord64BS :: ByteString -> Word64
 readWord64BS (BI.PS fptr _ len) =
@@ -70,33 +80,43 @@ readWord64BS (BI.PS fptr _ len) =
               readWord64PtrOffset (offset + 1) $ n + acc * 10
           | otherwise = pure acc
 
+
 asciiWord8ToWord8 :: Word8 -> Word8
 asciiWord8ToWord8 b = b - fromIntegral (C.ord '0')
 
-newHeaderFromTraceId
-  :: ShortByteString -- ^ 128-bit integer
-  -> ByteString -- ^ ASCII text of 64-bit integer
+
+newHeaderFromTraceId ::
+  -- | 128-bit integer
+  ShortByteString ->
+  -- | ASCII text of 64-bit integer
+  ByteString
 newHeaderFromTraceId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 1
-  in showWord64BS w64
+   in showWord64BS w64
 
-newHeaderFromSpanId
-  :: ShortByteString -- ^ 64-bit integer
-  -> ByteString -- ^ ASCII text of 64-bit integer
+
+newHeaderFromSpanId ::
+  -- | 64-bit integer
+  ShortByteString ->
+  -- | ASCII text of 64-bit integer
+  ByteString
 newHeaderFromSpanId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 0
-  in showWord64BS w64
+   in showWord64BS w64
+
 
 -- | Read 'ByteArray' to 'Word64' with network-byte-order.
-indexByteArrayNbo
-  :: ByteArray
-  -> Int -- ^ Offset in 'Word64'-size unit
-  -> Word64
+indexByteArrayNbo ::
+  ByteArray ->
+  -- | Offset in 'Word64'-size unit
+  Int ->
+  Word64
 indexByteArrayNbo ba offset =
   loop 0 0
   where
     loop 8 acc = acc
     loop n acc = loop (n + 1) $ shift acc 8 + word8ToWord64 (indexByteArray ba $ 8 * offset + n)
+
 
 showWord64BS :: Word64 -> ByteString
 showWord64BS v =
@@ -118,8 +138,10 @@ showWord64BS v =
               writeOffPtr ptr offset (word8ToAsciiWord8 $ fromIntegral p)
               loop (n - 1) q (offset + 1) True
 
+
 word8ToAsciiWord8 :: Word8 -> Word8
 word8ToAsciiWord8 b = b + fromIntegral (C.ord '0')
+
 
 word8ToWord64 :: Word8 -> Word64
 word8ToWord64 = fromIntegral

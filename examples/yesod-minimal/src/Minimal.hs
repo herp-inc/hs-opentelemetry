@@ -10,8 +10,10 @@ module Minimal where
 
 import Conduit
 import Control.Monad.Logger
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map as M
+import Data.Maybe (fromMaybe)
 import Data.Pool (Pool)
 import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8)
@@ -24,10 +26,13 @@ import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
+import OpenTelemetry.Processor.Batch (batchProcessor)
+import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import Subsite (Subsite (Subsite))
 import qualified Subsite
+import System.Environment (lookupEnv)
 import UnliftIO hiding (Handler)
 import Yesod.Core (
   RenderRoute (..),
@@ -39,11 +44,6 @@ import Yesod.Core (
  )
 import Yesod.Core.Handler
 import Yesod.Persist
-import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe)
-import System.Environment (lookupEnv)
-import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
-import OpenTelemetry.Processor.Batch (batchProcessor)
 
 
 -- | This is my data type. There are many like it, but this one is mine.
@@ -130,7 +130,7 @@ main :: IO ()
 main = do
   pgsqlConnConfig <- B.pack . fromMaybe "host=localhost dbname=otel" <$> lookupEnv "YESOD_MINIMAL_PG_CONN"
   batchProcessorConfig <- detectBatchProcessorConfig
-  exporter:_ <- detectExporters
+  exporter : _ <- detectExporters
   processor <- batchProcessor batchProcessorConfig exporter
   (_, tracerProviderOptions) <- getTracerProviderInitializationOptions
   let tracerProviderOptions' =

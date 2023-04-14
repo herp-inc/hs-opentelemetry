@@ -12,5 +12,5 @@ import Subsite.Data
 import Yesod.Core
 
 
-instance Yesod master => YesodSubDispatch Subsite master where
+instance (Yesod master) => YesodSubDispatch Subsite master where
   yesodSubDispatch = $(mkYesodSubDispatch resourcesSubsite)
