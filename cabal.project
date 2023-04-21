@@ -11,6 +11,7 @@ packages:
   , propagators/b3
   , instrumentation/conduit
   , instrumentation/cloudflare
+  , instrumentation/hedis
   , instrumentation/hspec
   , instrumentation/http-client
   , instrumentation/persistent
