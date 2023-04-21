@@ -80,14 +80,14 @@ mkResource = Resource . unsafeAttributesFromListIgnoringLimits . catMaybes
 {- | Utility function to convert a required resource attribute
  into the format needed for 'mkResource'.
 -}
-(.=) :: ToAttribute a => Text -> a -> Maybe (Text, Attribute)
+(.=) :: (ToAttribute a) => Text -> a -> Maybe (Text, Attribute)
 k .= v = Just (k, toAttribute v)
 
 
 {- | Utility function to convert an optional resource attribute
  into the format needed for 'mkResource'.
 -}
-(.=?) :: ToAttribute a => Text -> Maybe a -> Maybe (Text, Attribute)
+(.=?) :: (ToAttribute a) => Text -> Maybe a -> Maybe (Text, Attribute)
 k .=? mv = (\k' v -> (k', toAttribute v)) k <$> mv
 
 
@@ -167,7 +167,7 @@ instance MaterializeResource 'Nothing where
   materializeResources (Resource attrs) = MaterializedResources Nothing attrs
 
 
-instance KnownSymbol s => MaterializeResource ('Just s) where
+instance (KnownSymbol s) => MaterializeResource ('Just s) where
   materializeResources (Resource attrs) = MaterializedResources (Just $ symbolVal (Proxy @s)) attrs
 
 

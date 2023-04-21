@@ -134,7 +134,7 @@ tokenCharacters = C.fromList "!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxy
 
 
 -- Ripped from file-embed-0.0.13
-bsToExp :: Monad m => ByteString -> m Exp
+bsToExp :: (Monad m) => ByteString -> m Exp
 #if MIN_VERSION_template_haskell(2, 5, 0)
 bsToExp bs =
     return $ ConE 'Token
