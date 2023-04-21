@@ -90,7 +90,7 @@ datadogTraceContextPropagator =
                 : hs
     }
   where
-    traceIdKey, parentIdKey, samplingPriorityKey :: IsString s => s
+    traceIdKey, parentIdKey, samplingPriorityKey :: (IsString s) => s
     traceIdKey = "x-datadog-trace-id"
     parentIdKey = "x-datadog-parent-id"
     samplingPriorityKey = "x-datadog-sampling-priority"

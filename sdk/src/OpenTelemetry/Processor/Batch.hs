@@ -230,7 +230,7 @@ data ProcessorMessage = Flush | Shutdown
  NOTE: this function requires the program be compiled with the @-threaded@ GHC
  option and will throw an error if this is not the case.
 -}
-batchProcessor :: MonadIO m => BatchTimeoutConfig -> Exporter ImmutableSpan -> m Processor
+batchProcessor :: (MonadIO m) => BatchTimeoutConfig -> Exporter ImmutableSpan -> m Processor
 batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   unless rtsSupportsBoundThreads $ error "The hs-opentelemetry batch processor does not work without the -threaded GHC flag!"
   batch <- newIORef $ boundedMap maxQueueSize

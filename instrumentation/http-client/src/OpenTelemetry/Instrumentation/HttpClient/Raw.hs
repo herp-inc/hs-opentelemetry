@@ -51,14 +51,14 @@ httpClientInstrumentationConfig = mempty
 
 
 -- TODO see if we can avoid recreating this on each request without being more invasive with the interface
-httpTracerProvider :: MonadIO m => m Tracer
+httpTracerProvider :: (MonadIO m) => m Tracer
 httpTracerProvider = do
   tp <- getGlobalTracerProvider
   pure $ makeTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
 
 
 instrumentRequest ::
-  MonadIO m =>
+  (MonadIO m) =>
   HttpClientInstrumentationConfig ->
   Context ->
   Request ->
@@ -101,7 +101,7 @@ instrumentRequest conf ctxt req = do
 
 
 instrumentResponse ::
-  MonadIO m =>
+  (MonadIO m) =>
   HttpClientInstrumentationConfig ->
   Context ->
   Response a ->
