@@ -27,15 +27,15 @@ import System.IO.Unsafe (unsafePerformIO)
 import UnliftIO.Exception
 
 
-instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlBackend m) where
+instance {-# OVERLAPS #-} (MonadTracer m) => MonadTracer (ReaderT SqlBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
 
 
-instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlReadBackend m) where
+instance {-# OVERLAPS #-} (MonadTracer m) => MonadTracer (ReaderT SqlReadBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
 
 
-instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlWriteBackend m) where
+instance {-# OVERLAPS #-} (MonadTracer m) => MonadTracer (ReaderT SqlWriteBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
 
 
@@ -61,7 +61,7 @@ connectionLevelAttributesKey = unsafePerformIO Vault.newKey
  so that queries are tracked appropriately in the tracing hierarchy.
 -}
 wrapSqlBackend ::
-  MonadIO m =>
+  (MonadIO m) =>
   -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
   [(Text, Attribute)] ->
   SqlBackend ->
@@ -75,7 +75,7 @@ wrapSqlBackend attrs conn_ = do
 so that queries are tracked appropriately in the tracing hierarchy.
 -}
 wrapSqlBackend' ::
-  MonadIO m =>
+  (MonadIO m) =>
   TracerProvider ->
   -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
   [(Text, Attribute)] ->
@@ -158,7 +158,7 @@ wrapSqlBackend' tp attrs conn_ = do
   pure $ insertOriginalConnection conn' conn
 
 
-annotateBasics :: MonadIO m => Span -> SqlBackend -> m ()
+annotateBasics :: (MonadIO m) => Span -> SqlBackend -> m ()
 annotateBasics span conn = do
   addAttributes
     span

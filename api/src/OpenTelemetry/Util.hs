@@ -70,7 +70,7 @@ class HasConstructor (f :: Type -> Type) where
   genericConstrName :: f x -> String
 
 
-instance HasConstructor f => HasConstructor (D1 c f) where
+instance (HasConstructor f) => HasConstructor (D1 c f) where
   genericConstrName (M1 x) = genericConstrName x
 
 
@@ -79,7 +79,7 @@ instance (HasConstructor x, HasConstructor y) => HasConstructor (x :+: y) where
   genericConstrName (R1 r) = genericConstrName r
 
 
-instance Constructor c => HasConstructor (C1 c f) where
+instance (Constructor c) => HasConstructor (C1 c f) where
   genericConstrName x = conName x
 
 
@@ -99,7 +99,7 @@ data AppendOnlyBoundedCollection a = AppendOnlyBoundedCollection
   }
 
 
-instance forall a. Show a => Show (AppendOnlyBoundedCollection a) where
+instance forall a. (Show a) => Show (AppendOnlyBoundedCollection a) where
   showsPrec d AppendOnlyBoundedCollection {collection = c, maxSize = m, dropped = r} =
     let vec = Builder.build c :: V.Vector a
      in showParen (d > 10) $
@@ -146,7 +146,7 @@ data FrozenBoundedCollection a = FrozenBoundedCollection
   deriving (Show)
 
 
-frozenBoundedCollection :: Foldable f => Int -> f a -> FrozenBoundedCollection a
+frozenBoundedCollection :: (Foldable f) => Int -> f a -> FrozenBoundedCollection a
 frozenBoundedCollection maxSize_ coll = FrozenBoundedCollection (V.fromListN maxSize_ $ toList coll) (collLength - maxSize_)
   where
     collLength = length coll
@@ -165,7 +165,7 @@ frozenBoundedCollectionDroppedElementCount (FrozenBoundedCollection _ dropped_) 
 
  @since 0.1.0.0
 -}
-bracketError :: MonadUnliftIO m => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
+bracketError :: (MonadUnliftIO m) => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
 bracketError before after thing = withRunInIO $ \run -> EUnsafe.mask $ \restore -> do
   x <- run before
   res1 <- EUnsafe.try $ restore $ run $ thing x

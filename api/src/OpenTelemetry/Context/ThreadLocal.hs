@@ -78,7 +78,7 @@ threadContextMap = unsafePerformIO newThreadStorageMap
 
  @since 0.0.1.0
 -}
-getContext :: MonadIO m => m Context
+getContext :: (MonadIO m) => m Context
 getContext = fromMaybe empty <$> lookupContext
 
 
@@ -86,7 +86,7 @@ getContext = fromMaybe empty <$> lookupContext
 
  @since 0.0.1.0
 -}
-lookupContext :: MonadIO m => m (Maybe Context)
+lookupContext :: (MonadIO m) => m (Maybe Context)
 lookupContext = lookup threadContextMap
 
 
@@ -94,7 +94,7 @@ lookupContext = lookup threadContextMap
 
  @since 0.0.1.0
 -}
-lookupContextOnThread :: MonadIO m => ThreadId -> m (Maybe Context)
+lookupContextOnThread :: (MonadIO m) => ThreadId -> m (Maybe Context)
 lookupContextOnThread = lookupOnThread threadContextMap
 
 
@@ -102,7 +102,7 @@ lookupContextOnThread = lookupOnThread threadContextMap
 
  @since 0.0.1.0
 -}
-attachContext :: MonadIO m => Context -> m (Maybe Context)
+attachContext :: (MonadIO m) => Context -> m (Maybe Context)
 attachContext = attach threadContextMap
 
 
@@ -110,7 +110,7 @@ attachContext = attach threadContextMap
 
  @since 0.0.1.0
 -}
-attachContextOnThread :: MonadIO m => ThreadId -> Context -> m (Maybe Context)
+attachContextOnThread :: (MonadIO m) => ThreadId -> Context -> m (Maybe Context)
 attachContextOnThread = attachOnThread threadContextMap
 
 
@@ -118,7 +118,7 @@ attachContextOnThread = attachOnThread threadContextMap
 
  @since 0.0.1.0
 -}
-detachContext :: MonadIO m => m (Maybe Context)
+detachContext :: (MonadIO m) => m (Maybe Context)
 detachContext = detach threadContextMap
 
 
@@ -126,7 +126,7 @@ detachContext = detach threadContextMap
 
  @since 0.0.1.0
 -}
-detachContextFromThread :: MonadIO m => ThreadId -> m (Maybe Context)
+detachContextFromThread :: (MonadIO m) => ThreadId -> m (Maybe Context)
 detachContextFromThread = detachFromThread threadContextMap
 
 
@@ -134,7 +134,7 @@ detachContextFromThread = detachFromThread threadContextMap
 
  @since 0.0.1.0
 -}
-adjustContext :: MonadIO m => (Context -> Context) -> m ()
+adjustContext :: (MonadIO m) => (Context -> Context) -> m ()
 adjustContext f = liftIO $ do
   ctxt <- getContext
   void $ attachContext $ f ctxt
@@ -144,5 +144,5 @@ adjustContext f = liftIO $ do
 
  @since 0.0.1.0
 -}
-adjustContextOnThread :: MonadIO m => ThreadId -> (Context -> Context) -> m ()
+adjustContextOnThread :: (MonadIO m) => ThreadId -> (Context -> Context) -> m ()
 adjustContextOnThread = adjustOnThread threadContextMap
