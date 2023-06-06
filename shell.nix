@@ -18,6 +18,8 @@ in
       haskell.packages.${compiler}.hspec-discover
       # haskell.packages.${compiler}.fourmolu
 
+      glibc
+      grpc
       libffi
       mysql80
       openssl
