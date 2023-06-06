@@ -63,6 +63,9 @@ cradle:
             - path: "instrumentation/conduit/test"
               component: "hs-opentelemetry-instrumentation-conduit:test:hs-opentelemetry-instrumentation-conduit-test"
 
+            - path: "instrumentation/grpc-haskell/src"
+              component: "hs-opentelemetry-instrumentation-grpc:lib"
+
             - path: "instrumentation/hedis/gen"
               component: "hs-opentelemetry-instrumentation-hedis:lib"
 
