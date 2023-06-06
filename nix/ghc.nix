@@ -2,5 +2,5 @@
 rec {
   ghc = pkgs.haskell.compiler.${compiler};
   compiler = "ghc${ghcVersion}";
-  ghcVersion = "902";
+  ghcVersion = "901";
 }

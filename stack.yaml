@@ -45,6 +45,7 @@ packages:
 - propagators/w3c
 - instrumentation/conduit
 - instrumentation/cloudflare
+# - instrumentation/grpc-haskell # able to be built with cabal
 - instrumentation/hedis
 - instrumentation/hspec
 - instrumentation/http-client
