@@ -20,6 +20,7 @@ packages:
   , instrumentation/postgresql-simple
   , instrumentation/wai
   , instrumentation/yesod
+  , examples/grpc-echo
   , examples/yesod-minimal
   , examples/yesod-subsite
   , utils/exceptions
@@ -29,6 +30,13 @@ source-repository-package
     type: git
     location: https://github.com/parsonsmatt/hs-memory
     tag: 296b79424854eae293f6ba09b5308a0bf4dfd6d5
+
+source-repository-package
+    type: git
+    location: http://github.com/awakesecurity/gRPC-haskell
+    tag: 0b37ef53702ca315526fbd1643edb8880517ad62
+    subdir: . core
+    -- HEAD of master at 2023-06-09
 
 allow-newer:
     http-api-data:base
