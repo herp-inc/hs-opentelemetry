@@ -1,5 +1,13 @@
 cradle:
   multi:
+    - path: "examples/grpc-echo/Setup.hs"
+      config:
+        cradle:
+          direct:
+            arguments:
+              - "-package base"
+              - "-package Cabal"
+              - "-package proto3-suite"
     - path: "instrumentation/hedis/Setup.hs"
       config:
         cradle:
