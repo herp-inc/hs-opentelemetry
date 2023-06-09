@@ -1,0 +1,76 @@
+cabal-version: 3.4
+
+name: grpc-echo-example
+version: 0.0.0
+build-type: Custom
+
+common common
+  ghc-options: -threaded
+               -with-rtsopts=-N
+               -Wall
+               -Wcompat
+               -Widentities
+               -Wincomplete-record-updates
+               -Wincomplete-uni-patterns
+               -Wmissing-export-lists
+               -Wmissing-exported-signatures
+               -Wmissing-home-modules
+               -Wmissing-export-lists
+               -Wmonomorphism-restriction
+               -Wno-name-shadowing
+               -Wpartial-fields
+               -Wredundant-constraints
+               -Wunused-packages
+  if impl(ghc >= 9.0)
+    ghc-options: -Winvalid-haddock
+  if impl(ghc >= 9.2)
+    ghc-options: -Wmissing-kind-signatures
+                 -Woperator-whitespace
+                 -Wredundant-bang-patterns
+  default-language: Haskell2010
+
+custom-setup
+  setup-depends:
+      Cabal,
+      base,
+      proto3-suite
+
+executable echo-client
+  import: common
+  main-is: EchoClient.hs
+  hs-source-dirs: .
+  build-depends: grpc-echo-example,
+                 base,
+                 bytestring,
+                 grpc-haskell-core,
+                 grpc-haskell,
+                 optparse-generic,
+                 text
+
+executable echo-server
+  import: common
+  main-is: EchoServer.hs
+  hs-source-dirs: .
+  build-depends: grpc-echo-example,
+                 base,
+                 bytestring,
+                 grpc-haskell-core,
+                 grpc-haskell,
+                 optparse-generic
+
+library
+  exposed-modules: Echo
+  autogen-modules: Echo
+  hs-source-dirs: gen
+  build-depends: base,
+                 bytestring,
+                 containers,
+                 deepseq,
+                 grpc-haskell-core,
+                 grpc-haskell,
+                 proto3-suite,
+                 proto3-wire,
+                 text,
+                 vector
+  ghc-options: -Wunused-packages
+  default-language: Haskell2010
