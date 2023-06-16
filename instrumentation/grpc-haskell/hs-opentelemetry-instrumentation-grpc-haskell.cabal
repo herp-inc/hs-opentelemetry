@@ -68,6 +68,6 @@ common release
 library
   import: release
   hs-source-dirs: src
-  exposed-modules: OpenTelemetry.Instrumentation.GRPC.Client
+  exposed-modules: OpenTelemetry.Instrumentation.GRPC
   build-depends: hs-opentelemetry-api,
                  text
