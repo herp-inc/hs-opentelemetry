@@ -1,11 +1,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 import Data.ByteString (ByteString)
 import Data.Maybe (fromMaybe)
@@ -21,6 +23,8 @@ import Network.GRPC.HighLevel.Generated (
   serverHost,
   serverPort,
  )
+import qualified OpenTelemetry.Instrumentation.GRPC as OtelGrpc
+import qualified OpenTelemetry.Trace as Otel
 import Options.Generic
 
 
@@ -49,4 +53,16 @@ main = do
           { serverHost = Host . fromMaybe "localhost" . unHelpful $ bind
           , serverPort = Port . fromMaybe 50051 . unHelpful $ port
           }
-  echoServer Echo {echoDoEcho = doEcho} opts
+  tracer <- createTracer
+  let service = OtelGrpc.traceableService tracer Otel.defaultSpanArguments {Otel.kind = Otel.Server} Echo {echoDoEcho = doEcho}
+  echoServer service opts
+
+
+createTracer :: IO Otel.Tracer
+createTracer = do
+  (processors, tracerProviderOptions) <- Otel.getTracerProviderInitializationOptions
+  tracerProvider <- Otel.createTracerProvider processors tracerProviderOptions
+  pure $ Otel.makeTracer tracerProvider "echo-server" Otel.tracerOptions
+
+
+instance OtelGrpc.Traceable (Echo ServerRequest ServerResponse)

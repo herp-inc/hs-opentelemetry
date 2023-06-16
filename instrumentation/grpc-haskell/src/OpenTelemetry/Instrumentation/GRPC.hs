@@ -7,7 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
-module OpenTelemetry.Instrumentation.GRPC.Client (
+module OpenTelemetry.Instrumentation.GRPC (
   Traceable (..),
   inSpan,
 ) where
@@ -21,9 +21,9 @@ import GHC.Stack (HasCallStack)
 import qualified OpenTelemetry.Trace.Core as Otel
 
 
-inSpan :: HasCallStack => Otel.Tracer -> Text -> (request -> IO response) -> request -> IO response
-inSpan tracer name f r =
-  Otel.inSpan tracer name Otel.defaultSpanArguments $ f r
+inSpan :: HasCallStack => Otel.Tracer -> Text -> Otel.SpanArguments -> (request -> IO response) -> request -> IO response
+inSpan tracer name args f r =
+  Otel.inSpan tracer name args $ f r
 
 
 class Traceable service where
@@ -41,36 +41,36 @@ class Traceable service where
   -- @
   -- 'traceableService' tracer Service { rpc1 } = Service { rpc1 = 'inSpan' tracer "Service.rpc1" rpc1 }
   -- @
-  traceableService :: Otel.Tracer -> service -> service
-  default traceableService :: (G.Generic service, GTraceable (G.Rep service)) => Otel.Tracer -> service -> service
-  traceableService tracer = G.to . gTraceableService tracer . G.from
+  traceableService :: Otel.Tracer -> Otel.SpanArguments -> service -> service
+  default traceableService :: (G.Generic service, GTraceable (G.Rep service)) => Otel.Tracer -> Otel.SpanArguments -> service -> service
+  traceableService tracer args = G.to . gTraceableService tracer args . G.from
 
 
 class GTraceable rep where
-  gTraceableService :: Otel.Tracer -> rep a -> rep a
+  gTraceableService :: Otel.Tracer -> Otel.SpanArguments -> rep a -> rep a
 
 
 class GTraceableSelectors rep where
-  gTraceableSelectors :: Otel.Tracer -> String -> rep a -> rep a
+  gTraceableSelectors :: Otel.Tracer -> String -> Otel.SpanArguments -> rep a -> rep a
 
 
 instance (GTraceableSelectors f, G.Datatype dc, G.Constructor cc) => GTraceable (G.M1 G.D dc (G.M1 G.C cc f)) where
-  gTraceableService tracer datatypeRep@(G.M1 conRep@(G.M1 selsRep)) =
+  gTraceableService tracer args datatypeRep@(G.M1 conRep@(G.M1 selsRep)) =
     assert (G.datatypeName datatypeRep == G.conName conRep) $
       G.M1 $
         G.M1 $
-          gTraceableSelectors tracer (G.datatypeName datatypeRep) selsRep
+          gTraceableSelectors tracer (G.datatypeName datatypeRep) args selsRep
 
 
 instance G.Selector c => GTraceableSelectors (G.M1 G.S c (G.K1 G.R (request -> IO response))) where
-  gTraceableSelectors tracer serviceName rep@(G.M1 (G.K1 rpc)) =
+  gTraceableSelectors tracer serviceName args rep@(G.M1 (G.K1 rpc)) =
     assert (map toLower serviceName == map toLower (take (length serviceName) $ G.selName rep)) $
       let spanName = Text.pack serviceName <> "." <> Text.pack (drop (length serviceName) $ G.selName rep)
-       in G.M1 $ G.K1 $ inSpan tracer spanName rpc
+       in G.M1 $ G.K1 $ inSpan tracer spanName args rpc
 
 
 instance (GTraceableSelectors f, GTraceableSelectors g) => GTraceableSelectors (f G.:*: g) where
-  gTraceableSelectors tracer serviceName (rep1 G.:*: rep2) =
-    let rep1' = gTraceableSelectors tracer serviceName rep1
-        rep2' = gTraceableSelectors tracer serviceName rep2
+  gTraceableSelectors tracer serviceName args (rep1 G.:*: rep2) =
+    let rep1' = gTraceableSelectors tracer serviceName args rep1
+        rep2' = gTraceableSelectors tracer serviceName args rep2
      in rep1' G.:*: rep2'
