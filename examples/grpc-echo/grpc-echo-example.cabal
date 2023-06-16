@@ -59,6 +59,9 @@ executable echo-server
                  bytestring,
                  grpc-haskell-core,
                  grpc-haskell,
+                 hs-opentelemetry-api,
+                 hs-opentelemetry-instrumentation-grpc-haskell,
+                 hs-opentelemetry-sdk,
                  optparse-generic
 
 library
