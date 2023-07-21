@@ -14,6 +14,7 @@ module OpenTelemetry.Instrumentation.GRPC (
 import Control.Exception (assert)
 import Data.Char (toLower)
 import qualified Data.Text as Text
+import Debug.Trace (trace)
 import qualified GHC.Generics as G
 import qualified OpenTelemetry.Trace.Core as Otel
 
@@ -58,7 +59,7 @@ instance (G.Selector c) => GTraceableSelectors (G.M1 G.S c (G.K1 G.R (request ->
   gTraceableSelectors tracer serviceName args rep@(G.M1 (G.K1 rpc)) =
     assert (map toLower serviceName == map toLower (take (length serviceName) $ G.selName rep)) $
       let spanName = Text.pack serviceName <> "." <> Text.pack (drop (length serviceName) $ G.selName rep)
-       in G.M1 $ G.K1 $ Otel.inSpan tracer spanName args . rpc
+       in G.M1 $ G.K1 $ trace ("hs-opentelemetry-instrumentation-grpc-haskell: " ++ Text.unpack spanName) $ Otel.inSpan tracer spanName args . rpc
 
 
 instance (GTraceableSelectors f, GTraceableSelectors g) => GTraceableSelectors (f G.:*: g) where
