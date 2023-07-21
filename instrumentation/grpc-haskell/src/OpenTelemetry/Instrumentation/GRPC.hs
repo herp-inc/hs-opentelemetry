@@ -9,21 +9,13 @@
 
 module OpenTelemetry.Instrumentation.GRPC (
   Traceable (..),
-  inSpan,
 ) where
 
 import Control.Exception (assert)
 import Data.Char (toLower)
-import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified GHC.Generics as G
-import GHC.Stack (HasCallStack)
 import qualified OpenTelemetry.Trace.Core as Otel
-
-
-inSpan :: HasCallStack => Otel.Tracer -> Text -> Otel.SpanArguments -> (request -> IO response) -> request -> IO response
-inSpan tracer name args f r =
-  Otel.inSpan tracer name args $ f r
 
 
 class Traceable service where
@@ -62,11 +54,11 @@ instance (GTraceableSelectors f, G.Datatype dc, G.Constructor cc) => GTraceable 
           gTraceableSelectors tracer (G.datatypeName datatypeRep) args selsRep
 
 
-instance G.Selector c => GTraceableSelectors (G.M1 G.S c (G.K1 G.R (request -> IO response))) where
+instance (G.Selector c) => GTraceableSelectors (G.M1 G.S c (G.K1 G.R (request -> IO response))) where
   gTraceableSelectors tracer serviceName args rep@(G.M1 (G.K1 rpc)) =
     assert (map toLower serviceName == map toLower (take (length serviceName) $ G.selName rep)) $
       let spanName = Text.pack serviceName <> "." <> Text.pack (drop (length serviceName) $ G.selName rep)
-       in G.M1 $ G.K1 $ inSpan tracer spanName args rpc
+       in G.M1 $ G.K1 $ Otel.inSpan tracer spanName args . rpc
 
 
 instance (GTraceableSelectors f, GTraceableSelectors g) => GTraceableSelectors (f G.:*: g) where
