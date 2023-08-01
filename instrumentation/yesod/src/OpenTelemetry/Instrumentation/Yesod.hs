@@ -67,6 +67,7 @@ import Language.Haskell.TH (Quote (newName))
 #else
 import Language.Haskell.TH (newName)
 #endif
+import qualified Data.HashMap.Strict as H
 import Lens.Micro (Lens', lens)
 import Network.Wai (Request (vault), requestHeaders)
 import qualified OpenTelemetry.Context as Context
@@ -152,7 +153,7 @@ class YesodOpenTelemetryTrace site where
         pure $ makeTracer tracerProvider "hs-opentelemetry-instrumentation-yesod" tracerOptions
 
 
-instance {-# OVERLAPPABLE #-} YesodOpenTelemetryTrace site => M.MonadTracer (HandlerFor site) where
+instance {-# OVERLAPPABLE #-} (YesodOpenTelemetryTrace site) => M.MonadTracer (HandlerFor site) where
   getTracer = getTracer
 
 
@@ -163,7 +164,7 @@ instance MonadTracer (HandlerFor Site) where
   getTracer = getTracerWithGlobalTracerProvider
 @
 -}
-getTracerWithGlobalTracerProvider :: MonadIO m => m Tracer
+getTracerWithGlobalTracerProvider :: (MonadIO m) => m Tracer
 getTracerWithGlobalTracerProvider = do
   tp <- getGlobalTracerProvider
   pure $ makeTracer tp "hs-opentelemetry-instrumentation-yesod" tracerOptions

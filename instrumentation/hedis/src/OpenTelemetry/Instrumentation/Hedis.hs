@@ -5,6 +5,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
@@ -362,6 +363,7 @@ import qualified Control.Exception.Safe as E
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Reader (MonadReader (), ReaderT (ReaderT, runReaderT))
 import Data.ByteString (ByteString)
+import qualified Data.HashMap.Strict as H
 import Data.IP (IP)
 import Data.String (IsString (fromString))
 import Data.Text (Text)
@@ -548,12 +550,12 @@ makeTracer tp = Otel.makeTracer tp "hs-opentelemetry-instrumentation-hedis" Otel
 
 inSpan :: (MonadUnliftIO m, HasCallStack) => Otel.Tracer -> Text -> Orig.ConnectInfo -> m a -> m a
 inSpan tracer name info f = do
-  let args = Otel.defaultSpanArguments {Otel.kind = Otel.Client, Otel.attributes = attachAttributes info []}
+  let args = Otel.defaultSpanArguments {Otel.kind = Otel.Client, Otel.attributes = makeAttributes info}
   Otel.inSpan tracer name args f
 
 
-attachAttributes :: Orig.ConnectInfo -> [(Text, Otel.Attribute)] -> [(Text, Otel.Attribute)]
-attachAttributes info@Orig.ConnInfo {Orig.connectHost, Orig.connectPort} =
+makeAttributes :: Orig.ConnectInfo -> H.HashMap Text Otel.Attribute
+makeAttributes info@Orig.ConnInfo {Orig.connectHost, Orig.connectPort} =
   let
     transportAttr :: Otel.Attribute
     portAttr :: (Text, Otel.Attribute)
@@ -562,10 +564,11 @@ attachAttributes info@Orig.ConnInfo {Orig.connectHost, Orig.connectPort} =
         Orig.PortNumber n -> ("ip_tcp", ("net.peer.port", fromString $ show n))
         Orig.UnixSocket p -> ("other", ("net.sock.peer.port", fromString p))
    in
-    (("db.connection_string", fromString $ showsPrecConnectInfoMasked 0 info "") :)
-      . (portAttr :)
-      . (("net.transport", transportAttr) :)
-      . ((maybe "net.peer.name" (const "net.sock.peer.addr") (readMaybe connectHost :: Maybe IP), fromString connectHost) :)
+    [ ("db.connection_string", fromString $ showsPrecConnectInfoMasked 0 info "")
+    , portAttr
+    , (("net.transport", transportAttr))
+    , ((maybe "net.peer.name" (const "net.sock.peer.addr") (readMaybe connectHost :: Maybe IP), fromString connectHost))
+    ]
 
 
 showsPrecConnectInfoMasked :: Int -> Orig.ConnectInfo -> ShowS
