@@ -72,7 +72,7 @@ inSpan' = OpenTelemetry.Trace.Monad.inSpan'' callStack
 
 
 inSpan'' ::
-  (MonadUnliftIO m, MonadTracer m, HasCallStack) =>
+  (MonadUnliftIO m, MonadTracer m) =>
   CallStack ->
   Text ->
   SpanArguments ->

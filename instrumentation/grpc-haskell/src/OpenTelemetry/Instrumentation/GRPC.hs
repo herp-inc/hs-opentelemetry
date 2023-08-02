@@ -15,6 +15,7 @@ import Control.Exception (assert)
 import Data.Char (toLower)
 import qualified Data.Text as Text
 import qualified GHC.Generics as G
+import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified OpenTelemetry.Trace.Core as Otel
 
 
@@ -33,17 +34,17 @@ class Traceable service where
   -- @
   -- 'traceableService' tracer Service { rpc1 } = Service { rpc1 = 'inSpan' tracer "Service.rpc1" rpc1 }
   -- @
-  traceableService :: Otel.Tracer -> Otel.SpanArguments -> service -> service
-  default traceableService :: (G.Generic service, GTraceable (G.Rep service)) => Otel.Tracer -> Otel.SpanArguments -> service -> service
-  traceableService tracer args = G.to . gTraceableService tracer args . G.from
+  traceableService :: HasCallStack => Otel.Tracer -> Otel.SpanArguments -> service -> service
+  default traceableService :: (G.Generic service, GTraceable (G.Rep service), HasCallStack) => Otel.Tracer -> Otel.SpanArguments -> service -> service
+  traceableService tracer args = withFrozenCallStack $ G.to . gTraceableService tracer args . G.from
 
 
 class GTraceable rep where
-  gTraceableService :: Otel.Tracer -> Otel.SpanArguments -> rep a -> rep a
+  gTraceableService :: HasCallStack => Otel.Tracer -> Otel.SpanArguments -> rep a -> rep a
 
 
 class GTraceableSelectors rep where
-  gTraceableSelectors :: Otel.Tracer -> String -> Otel.SpanArguments -> rep a -> rep a
+  gTraceableSelectors :: HasCallStack => Otel.Tracer -> String -> Otel.SpanArguments -> rep a -> rep a
 
 
 instance (GTraceableSelectors f, G.Datatype dc, G.Constructor cc) => GTraceable (G.M1 G.D dc (G.M1 G.C cc f)) where

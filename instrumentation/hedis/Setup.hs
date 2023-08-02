@@ -49,7 +49,7 @@ preBuild _ _ = do
                   name = takeWhile (/= ' ') line
                   paramCount = length $ filter (== ('-', '>')) $ zip (init line) $ tail line
                   typ = replace oldConstraintText newConstraintText line
-                  term = name ++ " = wrap" ++ show paramCount ++ " \"" ++ name ++ "\" " ++ "Orig." ++ name
+                  term = name ++ " = withFrozenCallStack $ wrap" ++ show paramCount ++ " \"" ++ name ++ "\" " ++ "Orig." ++ name
                  in
                   if name == "command"
                     then Nothing -- becuase `command` has an unexposed type
@@ -71,7 +71,7 @@ preBuild _ _ = do
           , ""
           , "import Control.Monad.IO.Unlift (MonadUnliftIO)"
           , "import Data.ByteString (ByteString)"
-          , "import GHC.Stack (HasCallStack)"
+          , "import GHC.Stack (HasCallStack, withFrozenCallStack)"
           , "import qualified OpenTelemetry.Trace.Monad as Otel (MonadTracer)"
           , ""
           ]
