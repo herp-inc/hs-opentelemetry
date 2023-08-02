@@ -68,6 +68,7 @@ import Language.Haskell.TH (Quote (newName))
 import Language.Haskell.TH (newName)
 #endif
 import qualified Data.HashMap.Strict as H
+import GHC.Stack (withFrozenCallStack)
 import Lens.Micro (Lens', lens)
 import Network.Wai (Request (vault), requestHeaders)
 import qualified OpenTelemetry.Context as Context
@@ -325,41 +326,42 @@ openTelemetryYesodMiddleware ::
   RouteRenderer site ->
   HandlerFor site res ->
   HandlerFor site res
-openTelemetryYesodMiddleware rr (HandlerFor doResponse) = do
-  req <- waiRequest
-  mspan <- Context.lookupSpan <$> getContext
-  mr <- getCurrentRoute
-  let sharedAttributes =
-        H.fromList $
-          catMaybes
-            [ do
-                r <- mr
-                pure ("http.route", toAttribute $ pathRender rr r)
-            , do
-                ff <- lookup "X-Forwarded-For" $ requestHeaders req
-                pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
-            ]
-      args =
-        defaultSpanArguments
-          { kind = maybe Server (const Internal) mspan
-          , attributes = sharedAttributes
-          }
-  mapM_ (`addAttributes` sharedAttributes) mspan
-  eResult <- M.inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \s -> do
-    catch
-      ( HandlerFor $ \hdata@HandlerData {handlerRequest = hReq@YesodRequest {reqWaiRequest = waiReq}} -> do
-          Right <$> doResponse (hdata {handlerRequest = hReq {reqWaiRequest = waiReq {vault = V.insert spanKey s $ vault waiReq}}})
-      )
-      $ \e -> do
-        -- We want to mark the span as an error if it's an InternalError,
-        -- the other HCError values are 4xx status codes which don't
-        -- really count as a server error in OpenTelemetry spec parlance.
-        case e of
-          HCError (InternalError _) -> throwIO e
-          _ -> pure (Left (e :: HandlerContents))
-  case eResult of
-    Left hc -> throwIO hc
-    Right normal -> pure normal
+openTelemetryYesodMiddleware rr (HandlerFor doResponse) =
+  withFrozenCallStack $ do
+    req <- waiRequest
+    mspan <- Context.lookupSpan <$> getContext
+    mr <- getCurrentRoute
+    let sharedAttributes =
+          H.fromList $
+            catMaybes
+              [ do
+                  r <- mr
+                  pure ("http.route", toAttribute $ pathRender rr r)
+              , do
+                  ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                  pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+              ]
+        args =
+          defaultSpanArguments
+            { kind = maybe Server (const Internal) mspan
+            , attributes = sharedAttributes
+            }
+    mapM_ (`addAttributes` sharedAttributes) mspan
+    eResult <- M.inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \s -> do
+      catch
+        ( HandlerFor $ \hdata@HandlerData {handlerRequest = hReq@YesodRequest {reqWaiRequest = waiReq}} -> do
+            Right <$> doResponse (hdata {handlerRequest = hReq {reqWaiRequest = waiReq {vault = V.insert spanKey s $ vault waiReq}}})
+        )
+        $ \e -> do
+          -- We want to mark the span as an error if it's an InternalError,
+          -- the other HCError values are 4xx status codes which don't
+          -- really count as a server error in OpenTelemetry spec parlance.
+          case e of
+            HCError (InternalError _) -> throwIO e
+            _ -> pure (Left (e :: HandlerContents))
+    case eResult of
+      Left hc -> throwIO hc
+      Right normal -> pure normal
 
 
 spanKey :: V.Key Span

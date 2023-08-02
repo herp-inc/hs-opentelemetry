@@ -19,6 +19,7 @@ module OpenTelemetry.Instrumentation.HttpClient (
 
 import Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.ByteString.Lazy as L
+import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Network.HTTP.Client as X hiding (httpLbs, httpNoBody, responseOpen, withResponse)
 import qualified Network.HTTP.Client as Client
 import OpenTelemetry.Context.ThreadLocal
@@ -58,23 +59,24 @@ spanArgs = defaultSpanArguments {kind = Client}
  body.
 -}
 withResponse ::
-  (MonadUnliftIO m) =>
+  (MonadUnliftIO m, HasCallStack) =>
   HttpClientInstrumentationConfig ->
   Client.Request ->
   Client.Manager ->
   (Client.Response Client.BodyReader -> m a) ->
   m a
-withResponse httpConf req man f = do
-  t <- httpTracerProvider
-  inSpan' t "withResponse" spanArgs $ \_wrSpan -> do
-    ctxt <- getContext
-    -- TODO would like to capture the req/resp time specifically
-    -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
-    req' <- instrumentRequest httpConf ctxt req
-    runInIO <- askRunInIO
-    liftIO $ Client.withResponse req' man $ \resp -> do
-      _ <- instrumentResponse httpConf ctxt resp
-      runInIO $ f resp
+withResponse httpConf req man f =
+  withFrozenCallStack $ do
+    t <- httpTracerProvider
+    inSpan' t "withResponse" spanArgs $ \_wrSpan -> do
+      ctxt <- getContext
+      -- TODO would like to capture the req/resp time specifically
+      -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
+      req' <- instrumentRequest httpConf ctxt req
+      runInIO <- askRunInIO
+      liftIO $ Client.withResponse req' man $ \resp -> do
+        _ <- instrumentResponse httpConf ctxt resp
+        runInIO $ f resp
 
 
 {- | A convenience wrapper around 'withResponse' which reads in the entire
@@ -83,29 +85,31 @@ withResponse httpConf req man f = do
  for memory efficiency. If you are anticipating a large response body, you
  are encouraged to use 'withResponse' and 'brRead' instead.
 -}
-httpLbs :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
-httpLbs httpConf req man = do
-  t <- httpTracerProvider
-  inSpan' t "httpLbs" spanArgs $ \_ -> do
-    ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
-    resp <- liftIO $ Client.httpLbs req' man
-    _ <- instrumentResponse httpConf ctxt resp
-    pure resp
+httpLbs :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
+httpLbs httpConf req man =
+  withFrozenCallStack $ do
+    t <- httpTracerProvider
+    inSpan' t "httpLbs" spanArgs $ \_ -> do
+      ctxt <- getContext
+      req' <- instrumentRequest httpConf ctxt req
+      resp <- liftIO $ Client.httpLbs req' man
+      _ <- instrumentResponse httpConf ctxt resp
+      pure resp
 
 
 {- | A convenient wrapper around 'withResponse' which ignores the response
  body. This is useful, for example, when performing a HEAD request.
 -}
-httpNoBody :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
-httpNoBody httpConf req man = do
-  t <- httpTracerProvider
-  inSpan' t "httpNoBody" spanArgs $ \_ -> do
-    ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
-    resp <- liftIO $ Client.httpNoBody req' man
-    _ <- instrumentResponse httpConf ctxt resp
-    pure resp
+httpNoBody :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
+httpNoBody httpConf req man =
+  withFrozenCallStack $ do
+    t <- httpTracerProvider
+    inSpan' t "httpNoBody" spanArgs $ \_ -> do
+      ctxt <- getContext
+      req' <- instrumentRequest httpConf ctxt req
+      resp <- liftIO $ Client.httpNoBody req' man
+      _ <- instrumentResponse httpConf ctxt resp
+      pure resp
 
 
 {- | The most low-level function for initiating an HTTP request.
@@ -136,12 +140,13 @@ httpNoBody httpConf req man = do
  Content-Encoding: and Accept-Encoding: from request and response
  headers to be relayed.
 -}
-responseOpen :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
-responseOpen httpConf req man = do
-  t <- httpTracerProvider
-  inSpan' t "responseOpen" spanArgs $ \_ -> do
-    ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
-    resp <- liftIO $ Client.responseOpen req' man
-    _ <- instrumentResponse httpConf ctxt resp
-    pure resp
+responseOpen :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
+responseOpen httpConf req man =
+  withFrozenCallStack $ do
+    t <- httpTracerProvider
+    inSpan' t "responseOpen" spanArgs $ \_ -> do
+      ctxt <- getContext
+      req' <- instrumentRequest httpConf ctxt req
+      resp <- liftIO $ Client.responseOpen req' man
+      _ <- instrumentResponse httpConf ctxt resp
+      pure resp

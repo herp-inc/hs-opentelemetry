@@ -19,6 +19,7 @@ import qualified Data.Vault.Strict as Vault
 import Database.Persist.Sql
 import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBackendHooks, getConnVault, getRDBMS, modifyConnVault, setConnHooks)
 import Database.Persist.SqlBackend.Internal
+import GHC.Stack (withFrozenCallStack)
 import OpenTelemetry.Attributes (Attributes)
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
@@ -91,7 +92,7 @@ wrapSqlBackend' tp attrs conn_ =
           { hookGetStatement = \conn sql stmt -> do
               pure $
                 Statement
-                  { stmtQuery = \ps -> do
+                  { stmtQuery = withFrozenCallStack $ \ps -> do
                       ctxt <- getContext
                       let spanCreator = do
                             s <-
@@ -119,7 +120,7 @@ wrapSqlBackend' tp attrs conn_ =
                                 throwIO err
                             )
                             (stmtQueryAcquireF f)
-                  , stmtExecute = \ps -> do
+                  , stmtExecute = withFrozenCallStack $ \ps -> do
                       inSpan' t sql (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute sql) attrs}) $ \s -> do
                         annotateBasics s conn
                         stmtExecute stmt ps
@@ -131,7 +132,7 @@ wrapSqlBackend' tp attrs conn_ =
       conn' =
         conn
           { connHooks = hooks
-          , connBegin = \f mIso -> do
+          , connBegin = withFrozenCallStack $ \f mIso -> do
               let statement =
                     "begin transaction" <> case mIso of
                       Nothing -> mempty
@@ -143,15 +144,15 @@ wrapSqlBackend' tp attrs conn_ =
               inSpan' t statement (defaultSpanArguments {kind = Client, attributes = attrs'}) $ \s -> do
                 annotateBasics s conn
                 connBegin conn f mIso
-          , connCommit = \f -> do
+          , connCommit = withFrozenCallStack $ \f -> do
               inSpan' t "commit" (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute ("commit" :: Text)) attrs}) $ \s -> do
                 annotateBasics s conn
                 connCommit conn f
-          , connRollback = \f -> do
+          , connRollback = withFrozenCallStack $ \f -> do
               inSpan' t "rollback" (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute ("rollback" :: Text)) attrs}) $ \s -> do
                 annotateBasics s conn
                 connRollback conn f
-          , connClose = do
+          , connClose = withFrozenCallStack $ do
               inSpan' t "close connection" (defaultSpanArguments {kind = Client, attributes = attrs}) $ \s -> do
                 annotateBasics s conn
                 connClose conn
