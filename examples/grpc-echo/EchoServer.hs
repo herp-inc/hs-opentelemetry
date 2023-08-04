@@ -23,7 +23,7 @@ import Network.GRPC.HighLevel.Generated (
   serverHost,
   serverPort,
  )
-import qualified OpenTelemetry.Instrumentation.GRPC as OtelGrpc
+import qualified OpenTelemetry.Instrumentation.GRPC as Otel
 import qualified OpenTelemetry.Trace as Otel
 import Options.Generic
 
@@ -54,7 +54,7 @@ main = do
           , serverPort = Port . fromMaybe 50051 . unHelpful $ port
           }
   tracer <- createTracer
-  let service = OtelGrpc.traceableService tracer Otel.defaultSpanArguments {Otel.kind = Otel.Server} Echo {echoDoEcho = doEcho}
+  let service = Otel.propagatableTraceableServer tracer Otel.defaultSpanArguments {Otel.kind = Otel.Server} Echo {echoDoEcho = doEcho}
   echoServer service opts
 
 
@@ -65,4 +65,7 @@ createTracer = do
   pure $ Otel.makeTracer tracerProvider "echo-server" Otel.tracerOptions
 
 
-instance OtelGrpc.Traceable (Echo ServerRequest ServerResponse)
+instance Otel.Traceable (Echo ServerRequest ServerResponse)
+
+
+instance Otel.Propagatable (Echo ServerRequest ServerResponse)
