@@ -70,4 +70,9 @@ library
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.Instrumentation.GRPC
   build-depends: hs-opentelemetry-api,
+                 bytestring,
+                 case-insensitive,
+                 grpc-haskell,
+                 grpc-haskell-core,
+                 http-types,
                  text
