@@ -16,7 +16,7 @@ import qualified Data.Text.Lazy as TL
 import Echo
 import Network.GRPC.HighLevel.Client
 import Network.GRPC.LowLevel hiding (payload, port)
-import qualified OpenTelemetry.Instrumentation.GRPC as OtelGrpc
+import qualified OpenTelemetry.Instrumentation.GRPC as Otel
 import qualified OpenTelemetry.Trace as Otel
 import Options.Generic
 import Prelude hiding (FilePath)
@@ -50,7 +50,7 @@ main = do
   tracer <- createTracer
   withGRPC $ \g -> withClient g cfg $ \c -> do
     Echo {echoDoEcho} <-
-      OtelGrpc.traceableService tracer Otel.defaultSpanArguments {Otel.kind = Otel.Client}
+      Otel.propagatableTraceableClient tracer Otel.defaultSpanArguments {Otel.kind = Otel.Client}
         <$> echoClient c
     echoDoEcho (ClientNormalRequest rqt 5 mempty) >>= \case
       ClientNormalResponse rsp _ _ StatusOk _
@@ -70,4 +70,7 @@ createTracer = do
   pure $ Otel.makeTracer tracerProvider "echo-client" Otel.tracerOptions
 
 
-instance OtelGrpc.Traceable (Echo ClientRequest ClientResult)
+instance Otel.Traceable (Echo ClientRequest ClientResult)
+
+
+instance Otel.Propagatable (Echo ClientRequest ClientResult)
