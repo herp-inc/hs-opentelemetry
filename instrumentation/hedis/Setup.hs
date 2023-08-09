@@ -1,15 +1,13 @@
-import Data.Foldable (for_)
-import Data.List (intercalate, isPrefixOf, subsequences)
+import Data.List (intercalate, isPrefixOf)
 import Data.Maybe (mapMaybe)
-import Debug.Trace (trace, traceIO)
 import Distribution.Simple (Args, defaultMainWithHooks, simpleUserHooks)
 import qualified Distribution.Simple
 import Distribution.Simple.Setup (BuildFlags)
 import Distribution.Types.HookedBuildInfo (HookedBuildInfo, emptyHookedBuildInfo)
 import GHC.Stack (HasCallStack)
-import System.Directory (copyFile, createDirectoryIfMissing, getCurrentDirectory, getTemporaryDirectory, removeFile)
-import System.FilePath (takeDirectory, (</>))
-import System.IO (IOMode (ReadMode), hClose, hGetContents, hPutStr, hSetNewlineMode, noNewlineTranslation, openTempFile, stdin, withFile)
+import System.Directory (copyFile, createDirectoryIfMissing, getTemporaryDirectory, removeFile)
+import System.FilePath (takeDirectory)
+import System.IO (IOMode (ReadMode), hClose, hGetContents, hPutStr, hSetNewlineMode, noNewlineTranslation, openTempFile, withFile)
 
 
 main :: IO ()
@@ -23,7 +21,7 @@ append :: (RedisCtx m f, Otel.MonadTracer m, MonadUnliftIO m, HasCallStack) => B
 append = wrap2 "append" Orig.append
 @
 -}
-preBuild :: (HasCallStack) => Args -> BuildFlags -> IO HookedBuildInfo
+preBuild :: HasCallStack => Args -> BuildFlags -> IO HookedBuildInfo
 preBuild _ _ = do
   let
     sourceTextPath = "functions.txt"
