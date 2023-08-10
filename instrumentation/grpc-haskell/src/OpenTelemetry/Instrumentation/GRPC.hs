@@ -15,6 +15,9 @@ module OpenTelemetry.Instrumentation.GRPC (
   propagatableTraceableClient,
   Propagatable (..),
   Traceable (..),
+  GTraceable (..),
+  GTraceableSelectors (..),
+  GPropagatable (..),
   convertToGrpcPropagator,
 ) where
 
@@ -24,7 +27,6 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI
-import Data.Char (toLower)
 import qualified Data.Text as Text
 import Debug.Trace (trace)
 import GHC.Exts (IsList (fromList, toList))
@@ -38,6 +40,7 @@ import qualified OpenTelemetry.Context as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.Propagator as Otel
 import qualified OpenTelemetry.Trace.Core as Otel
+import qualified Proto3.Suite.DotProto.Generate as Proto3
 
 
 propagatableTraceableServer :: (Traceable service, Propagatable service, HasCallStack) => Otel.Tracer -> Otel.SpanArguments -> service -> service
@@ -65,36 +68,35 @@ class Traceable service where
   -- @
   traceableService :: Otel.Tracer -> Otel.SpanArguments -> service -> service
   default traceableService :: (G.Generic service, GTraceable (G.Rep service)) => Otel.Tracer -> Otel.SpanArguments -> service -> service
-  traceableService tracer args = G.to . gTraceableService tracer args . G.from
+  traceableService tracer args = G.to . gTraceableService (Proto3.IsPrefixed True) tracer args . G.from
 
 
 class GTraceable rep where
-  gTraceableService :: Otel.Tracer -> Otel.SpanArguments -> rep a -> rep a
+  gTraceableService :: Proto3.IsPrefixed -> Otel.Tracer -> Otel.SpanArguments -> rep a -> rep a
 
 
 class GTraceableSelectors rep where
-  gTraceableSelectors :: Otel.Tracer -> String -> Otel.SpanArguments -> rep a -> rep a
+  gTraceableSelectors :: Proto3.IsPrefixed -> Otel.Tracer -> String -> Otel.SpanArguments -> rep a -> rep a
 
 
 instance (GTraceableSelectors f, G.Datatype dc, G.Constructor cc) => GTraceable (G.M1 G.D dc (G.M1 G.C cc f)) where
-  gTraceableService tracer args datatypeRep@(G.M1 conRep@(G.M1 selsRep)) =
+  gTraceableService prefixed tracer args datatypeRep@(G.M1 conRep@(G.M1 selsRep)) =
     assert (G.datatypeName datatypeRep == G.conName conRep) $
       G.M1 $
         G.M1 $
-          gTraceableSelectors tracer (G.datatypeName datatypeRep) args selsRep
+          gTraceableSelectors prefixed tracer (G.datatypeName datatypeRep) args selsRep
 
 
 instance (G.Selector c) => GTraceableSelectors (G.M1 G.S c (G.K1 G.R (request -> IO response))) where
-  gTraceableSelectors tracer serviceName args rep@(G.M1 (G.K1 rpc)) =
-    assert (map toLower serviceName == map toLower (take (length serviceName) $ G.selName rep)) $
-      let spanName = Text.pack serviceName <> "." <> Text.pack (drop (length serviceName) $ G.selName rep)
-       in G.M1 $ G.K1 $ trace ("hs-opentelemetry-instrumentation-grpc-haskell: " ++ Text.unpack spanName) $ Otel.inSpan tracer spanName args . rpc
+  gTraceableSelectors (Proto3.IsPrefixed prefixed) tracer serviceName args rep@(G.M1 (G.K1 rpc)) =
+    let spanName = Text.pack serviceName <> "." <> Text.pack ((if prefixed then drop $ length serviceName else id) $ G.selName rep)
+     in G.M1 $ G.K1 $ trace ("hs-opentelemetry-instrumentation-grpc-haskell: " ++ Text.unpack spanName) $ Otel.inSpan tracer spanName args . rpc
 
 
 instance (GTraceableSelectors f, GTraceableSelectors g) => GTraceableSelectors (f G.:*: g) where
-  gTraceableSelectors tracer serviceName args (rep1 G.:*: rep2) =
-    let rep1' = gTraceableSelectors tracer serviceName args rep1
-        rep2' = gTraceableSelectors tracer serviceName args rep2
+  gTraceableSelectors prefixed tracer serviceName args (rep1 G.:*: rep2) =
+    let rep1' = gTraceableSelectors prefixed tracer serviceName args rep1
+        rep2' = gTraceableSelectors prefixed tracer serviceName args rep2
      in rep1' G.:*: rep2'
 
 
