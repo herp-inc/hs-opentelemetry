@@ -28,7 +28,6 @@ import Data.ByteString (ByteString)
 import Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text as Text
-import Debug.Trace (trace)
 import GHC.Exts (IsList (fromList, toList))
 import qualified GHC.Generics as G
 import GHC.Stack (HasCallStack)
@@ -90,7 +89,7 @@ instance (GTraceableSelectors f, G.Datatype dc, G.Constructor cc) => GTraceable 
 instance (G.Selector c) => GTraceableSelectors (G.M1 G.S c (G.K1 G.R (request -> IO response))) where
   gTraceableSelectors (Proto3.IsPrefixed prefixed) tracer serviceName args rep@(G.M1 (G.K1 rpc)) =
     let spanName = Text.pack serviceName <> "." <> Text.pack ((if prefixed then drop $ length serviceName else id) $ G.selName rep)
-     in G.M1 $ G.K1 $ trace ("hs-opentelemetry-instrumentation-grpc-haskell: " ++ Text.unpack spanName) $ Otel.inSpan tracer spanName args . rpc
+     in G.M1 $ G.K1 $ Otel.inSpan tracer spanName args . rpc
 
 
 instance (GTraceableSelectors f, GTraceableSelectors g) => GTraceableSelectors (f G.:*: g) where
