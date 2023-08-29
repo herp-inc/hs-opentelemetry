@@ -104,9 +104,8 @@ getRootR = do
   -- Wouldn't put this here in a real app
   m <- inSpan "initialize http manager" defaultSpanArguments $ do
     liftIO $ newManager defaultManagerSettings
-  let httpConfig = httpClientInstrumentationConfig
   req <- parseUrlThrow "http://localhost:3000/api"
-  resp <- httpLbs httpConfig req m
+  resp <- httpLbs req m
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 

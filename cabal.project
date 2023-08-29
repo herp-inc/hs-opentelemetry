@@ -21,6 +21,7 @@ packages:
   , instrumentation/wai
   , instrumentation/yesod
   , examples/grpc-echo
+  , examples/http-server
   , examples/yesod-minimal
   , examples/yesod-subsite
   , utils/exceptions

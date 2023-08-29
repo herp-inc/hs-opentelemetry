@@ -18,7 +18,8 @@ import Network.HTTP.Types
 import OpenTelemetry.Context (Context, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator
-import OpenTelemetry.Trace.Core
+import OpenTelemetry.Trace.Core hiding (makeTracer)
+import qualified OpenTelemetry.Trace.Core as O
 
 
 data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
@@ -54,17 +55,21 @@ httpClientInstrumentationConfig = mempty
 httpTracerProvider :: (MonadIO m) => m Tracer
 httpTracerProvider = do
   tp <- getGlobalTracerProvider
-  pure $ makeTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
+  pure $ makeTracer tp
+
+
+makeTracer :: TracerProvider -> Tracer
+makeTracer tp = O.makeTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
 
 
 instrumentRequest ::
   (MonadIO m) =>
+  Tracer ->
   HttpClientInstrumentationConfig ->
   Context ->
   Request ->
   m Request
-instrumentRequest conf ctxt req = do
-  tp <- httpTracerProvider
+instrumentRequest tracer conf ctxt req = do
   forM_ (lookupSpan ctxt) $ \s -> do
     let url =
           T.decodeUtf8
@@ -93,7 +98,7 @@ instrumentRequest conf ctxt req = do
         (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
       $ requestHeadersToRecord conf
 
-  hdrs <- inject (getTracerProviderPropagators $ getTracerTracerProvider tp) ctxt $ requestHeaders req
+  hdrs <- inject (getTracerProviderPropagators $ getTracerTracerProvider tracer) ctxt $ requestHeaders req
   pure $
     req
       { requestHeaders = hdrs
@@ -102,13 +107,13 @@ instrumentRequest conf ctxt req = do
 
 instrumentResponse ::
   (MonadIO m) =>
+  Tracer ->
   HttpClientInstrumentationConfig ->
   Context ->
   Response a ->
   m ()
-instrumentResponse conf ctxt resp = do
-  tp <- httpTracerProvider
-  ctxt' <- extract (getTracerProviderPropagators $ getTracerTracerProvider tp) (responseHeaders resp) ctxt
+instrumentResponse tracer conf ctxt resp = do
+  ctxt' <- extract (getTracerProviderPropagators $ getTracerTracerProvider tracer) (responseHeaders resp) ctxt
   _ <- attachContext ctxt'
   forM_ (lookupSpan ctxt') $ \s -> do
     when (statusCode (responseStatus resp) >= 400) $ do

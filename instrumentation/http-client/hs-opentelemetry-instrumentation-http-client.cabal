@@ -45,6 +45,7 @@ library
     , http-client-tls
     , http-conduit
     , http-types
+    , network
     , text
     , unliftio
     , unordered-containers
@@ -71,6 +72,7 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
     , http-client-tls
     , http-conduit
     , http-types
+    , network
     , text
     , unliftio
     , unordered-containers
