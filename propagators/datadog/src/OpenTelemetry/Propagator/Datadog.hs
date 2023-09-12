@@ -4,16 +4,11 @@
 
 module OpenTelemetry.Propagator.Datadog (
   datadogTraceContextPropagator,
-  convertOpenTelemetrySpanIdToDatadogSpanId,
-  convertOpenTelemetryTraceIdToDatadogTraceId,
 ) where
 
 import qualified Data.ByteString.Char8 as BC
-import qualified Data.ByteString.Short.Internal as SBI
-import Data.Primitive (ByteArray (ByteArray))
 import Data.String (IsString)
 import qualified Data.Text as T
-import Data.Word (Word64)
 import Network.HTTP.Types (
   RequestHeaders,
   ResponseHeaders,
@@ -30,7 +25,6 @@ import OpenTelemetry.Internal.Trace.Id (
  )
 import OpenTelemetry.Propagator (Propagator (Propagator, extractor, injector, propagatorNames))
 import OpenTelemetry.Propagator.Datadog.Internal (
-  indexByteArrayNbo,
   newHeaderFromSpanId,
   newHeaderFromTraceId,
   newSpanIdFromHeader,
@@ -45,9 +39,6 @@ import OpenTelemetry.Trace.TraceState (TraceState (TraceState))
 import qualified OpenTelemetry.Trace.TraceState as TS
 
 
--- Reference: bi-directional conversion of IDs of Open Telemetry and ones of Datadog
--- - English: https://docs.datadoghq.com/tracing/other_telemetry/connect_logs_and_traces/opentelemetry/
--- - Japanese: https://docs.datadoghq.com/ja/tracing/connect_logs_and_traces/opentelemetry/
 datadogTraceContextPropagator :: Propagator Context RequestHeaders ResponseHeaders
 datadogTraceContextPropagator =
   Propagator
@@ -94,11 +85,3 @@ datadogTraceContextPropagator =
     traceIdKey = "x-datadog-trace-id"
     parentIdKey = "x-datadog-parent-id"
     samplingPriorityKey = "x-datadog-sampling-priority"
-
-
-convertOpenTelemetrySpanIdToDatadogSpanId :: SpanId -> Word64
-convertOpenTelemetrySpanIdToDatadogSpanId (SpanId (SBI.SBS a)) = indexByteArrayNbo (ByteArray a) 0
-
-
-convertOpenTelemetryTraceIdToDatadogTraceId :: TraceId -> Word64
-convertOpenTelemetryTraceIdToDatadogTraceId (TraceId (SBI.SBS a)) = indexByteArrayNbo (ByteArray a) 1

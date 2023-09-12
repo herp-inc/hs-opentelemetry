@@ -47,6 +47,7 @@ packages:
 - instrumentation/cloudflare
 # - instrumentation/grpc-haskell # able to be built with cabal
 - instrumentation/hedis
+# - instrumentation/herp-logger-datadog
 - instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/persistent
@@ -58,6 +59,7 @@ packages:
 - examples/yesod-minimal
 - examples/yesod-subsite
 - utils/exceptions
+- vendors/datadog
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as

@@ -2,12 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 
-module OpenTelemetry.Propagator.DatadogSpec where
+module OpenTelemetry.Vendor.DatadogSpec where
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Short as SB
 import OpenTelemetry.Internal.Trace.Id
-import OpenTelemetry.Propagator.Datadog
+import OpenTelemetry.Vendor.Datadog
 import Test.Hspec
 import Test.QuickCheck
 
