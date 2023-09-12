@@ -2,26 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict #-}
 
-{- | Conversion of the hs-opentelemetry internal representation of the trace ID and the span ID and the Datadog header representation of them each other.
-
-+----------+-----------------+----------------+
-|          | Trace ID        | Span ID        |
-+----------+-----------------+----------------+
-| Internal | 128-bit integer | 64-bit integer |
-+----------+-----------------+----------------+
-| Datadog  | ASCII text of   | ASCII text of  |
-| Header   | 64-bit integer  | 64-bit integer |
-+----------+-----------------+----------------+
--}
 module OpenTelemetry.Propagator.Datadog.Internal (
   newTraceIdFromHeader,
   newSpanIdFromHeader,
   newHeaderFromTraceId,
   newHeaderFromSpanId,
-  indexByteArrayNbo,
 ) where
 
-import Data.Bits (Bits (shift))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Internal as BI
@@ -30,11 +17,12 @@ import Data.ByteString.Short (ShortByteString)
 import qualified Data.ByteString.Short as SB
 import qualified Data.ByteString.Short.Internal as SBI
 import qualified Data.Char as C
-import Data.Primitive.ByteArray (ByteArray (ByteArray), indexByteArray)
+import Data.Primitive.ByteArray (ByteArray (ByteArray))
 import Data.Primitive.Ptr (writeOffPtr)
 import Data.Word (Word64, Word8)
 import Foreign.ForeignPtr (withForeignPtr)
 import Foreign.Storable (peekElemOff)
+import OpenTelemetry.Vendor.Datadog.Internal (indexByteArrayNbo)
 import System.IO.Unsafe (unsafeDupablePerformIO)
 
 
@@ -105,19 +93,6 @@ newHeaderFromSpanId (SBI.SBS ba) =
    in showWord64BS w64
 
 
--- | Read 'ByteArray' to 'Word64' with network-byte-order.
-indexByteArrayNbo ::
-  ByteArray ->
-  -- | Offset in 'Word64'-size unit
-  Int ->
-  Word64
-indexByteArrayNbo ba offset =
-  loop 0 0
-  where
-    loop 8 acc = acc
-    loop n acc = loop (n + 1) $ shift acc 8 + word8ToWord64 (indexByteArray ba $ 8 * offset + n)
-
-
 showWord64BS :: Word64 -> ByteString
 showWord64BS v =
   -- Safe.
@@ -141,7 +116,3 @@ showWord64BS v =
 
 word8ToAsciiWord8 :: Word8 -> Word8
 word8ToAsciiWord8 b = b + fromIntegral (C.ord '0')
-
-
-word8ToWord64 :: Word8 -> Word64
-word8ToWord64 = fromIntegral
