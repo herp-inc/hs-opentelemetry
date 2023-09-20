@@ -274,8 +274,6 @@ otlpExporter conf = do
                 threadDelay (retryDelay `shiftL` backoffCount)
                 sendReq req (backoffCount + 1)
 
-      either print (\_ -> pure ()) eResp
-
       case eResp of
         Left err@(HttpExceptionRequest _ e) ->
           if isRetryableException e
@@ -296,9 +294,7 @@ otlpExporter conf = do
                     sendReq req (backoffCount + 1)
             else
               if statusCode (responseStatus resp) >= 300
-                then do
-                  print resp
-                  pure $ Failure Nothing
+                then pure $ Failure Nothing
                 else pure Success
 
 
