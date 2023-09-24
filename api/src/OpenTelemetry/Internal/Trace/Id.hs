@@ -54,6 +54,7 @@ import GHC.Exts (
   or#,
  )
 import GHC.Generics (Generic)
+import GHC.Prim (word64ToWord#)
 import OpenTelemetry.Trace.Id.Generator (
   IdGenerator (generateSpanIdBytes, generateTraceIdBytes),
  )
