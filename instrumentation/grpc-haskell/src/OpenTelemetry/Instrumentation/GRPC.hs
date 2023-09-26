@@ -26,6 +26,7 @@ import Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI
 import Data.Char (toLower)
 import qualified Data.Text as Text
+import Data.Version (showVersion)
 import GHC.Exts (IsList (fromList, toList))
 import qualified GHC.Generics as G
 import GHC.Stack (HasCallStack, withFrozenCallStack)
@@ -37,14 +38,19 @@ import qualified OpenTelemetry.Context as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.Propagator as Otel
 import qualified OpenTelemetry.Trace.Core as Otel
+import qualified Paths_hs_opentelemetry_instrumentation_grpc_haskell
 
 
-propagatableTraceableServer :: (Traceable service, Propagatable service, HasCallStack) => Otel.Tracer -> Otel.SpanArguments -> service -> service
-propagatableTraceableServer tracer args = withFrozenCallStack $ propagatableService tracer . traceableService tracer args
+propagatableTraceableServer :: (Traceable service, Propagatable service, HasCallStack) => Otel.TracerProvider -> service -> service
+propagatableTraceableServer provider = withFrozenCallStack $ propagatableService tracer . traceableService tracer Otel.defaultSpanArguments {Otel.kind = Otel.Server} where tracer = makeTracer provider
 
 
-propagatableTraceableClient :: (Traceable service, Propagatable service, HasCallStack) => Otel.Tracer -> Otel.SpanArguments -> service -> service
-propagatableTraceableClient tracer args = withFrozenCallStack $ traceableService tracer args . propagatableService tracer
+propagatableTraceableClient :: (Traceable service, Propagatable service, HasCallStack) => Otel.TracerProvider -> service -> service
+propagatableTraceableClient provider = withFrozenCallStack $ traceableService tracer Otel.defaultSpanArguments {Otel.kind = Otel.Client} . propagatableService tracer where tracer = makeTracer provider
+
+
+makeTracer :: Otel.TracerProvider -> Otel.Tracer
+makeTracer provider = Otel.makeTracer provider (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-grpc-haskell" $ Text.pack $ showVersion Paths_hs_opentelemetry_instrumentation_grpc_haskell.version) (Otel.TracerOptions Nothing)
 
 
 class Traceable service where

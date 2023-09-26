@@ -47,11 +47,9 @@ main = do
         []
         Nothing
         Nothing
-  tracer <- createTracer
+  tracerProvider <- createTracerProvider
   withGRPC $ \g -> withClient g cfg $ \c -> do
-    Echo {echoDoEcho} <-
-      Otel.propagatableTraceableClient tracer Otel.defaultSpanArguments {Otel.kind = Otel.Client}
-        <$> echoClient c
+    Echo {echoDoEcho} <- Otel.propagatableTraceableClient tracerProvider <$> echoClient c
     echoDoEcho (ClientNormalRequest rqt 5 mempty) >>= \case
       ClientNormalResponse rsp _ _ StatusOk _
         | rsp == expected -> return ()
@@ -63,11 +61,10 @@ main = do
   pure ()
 
 
-createTracer :: IO Otel.Tracer
-createTracer = do
+createTracerProvider :: IO Otel.TracerProvider
+createTracerProvider = do
   (processors, tracerProviderOptions) <- Otel.getTracerProviderInitializationOptions
-  tracerProvider <- Otel.createTracerProvider processors tracerProviderOptions
-  pure $ Otel.makeTracer tracerProvider "echo-client" Otel.tracerOptions
+  Otel.createTracerProvider processors tracerProviderOptions
 
 
 instance Otel.Traceable (Echo ClientRequest ClientResult)

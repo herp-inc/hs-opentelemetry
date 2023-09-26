@@ -69,6 +69,8 @@ library
   import: release
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.Instrumentation.GRPC
+  other-modules: Paths_hs_opentelemetry_instrumentation_grpc_haskell
+  autogen-modules: Paths_hs_opentelemetry_instrumentation_grpc_haskell
   build-depends: hs-opentelemetry-api,
                  bytestring,
                  case-insensitive,
