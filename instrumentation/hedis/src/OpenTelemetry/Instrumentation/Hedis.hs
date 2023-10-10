@@ -393,7 +393,7 @@ data Connection = Connection {connectInfo :: Orig.ConnectInfo, originalConnectio
 newtype Redis m a
   = Redis (ReaderT Otel.Tracer m a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadUnliftIO, MonadFail, MonadReader Otel.Tracer)
-  deriving (Otel.MonadTracer) via (Otel.TracerT m)
+  deriving (Otel.MonadTracer) via (Otel.TracerT Otel.Tracer m)
 
 #if !MIN_VERSION_hedis(0, 15, 1)
 instance {-# OVERLAPPING #-} MonadUnliftIO (Redis Orig.Redis) where

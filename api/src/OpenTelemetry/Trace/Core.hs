@@ -768,6 +768,10 @@ class HasTracer s where
   tracerL :: Lens' s Tracer
 
 
+instance HasTracer Tracer where
+  tracerL = id
+
+
 makeTracer :: TracerProvider -> InstrumentationLibrary -> TracerOptions -> Tracer
 makeTracer tp n TracerOptions {} = Tracer n tp
 
