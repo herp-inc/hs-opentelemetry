@@ -147,6 +147,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Data.Coerce
+import Data.Default.Class (Default (def))
 import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe (fromMaybe, isJust, isNothing)
@@ -801,13 +802,7 @@ getTracerTracerProvider = tracerProvider
  - `startTime`: `Nothing` (`getTimestamp` will be called upon `Span` creation)
 -}
 defaultSpanArguments :: SpanArguments
-defaultSpanArguments =
-  SpanArguments
-    { kind = Internal
-    , attributes = []
-    , links = []
-    , startTime = Nothing
-    }
+defaultSpanArguments = def
 
 
 {- | This method provides a way for provider to do any cleanup required.

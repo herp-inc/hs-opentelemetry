@@ -43,6 +43,7 @@ dependencies:
 - random
 - mwc-random
 - random-bytestring
+- data-default-class
 
 library:
   ghc-options: -Wall

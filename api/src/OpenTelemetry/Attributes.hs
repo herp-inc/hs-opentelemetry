@@ -46,6 +46,7 @@ module OpenTelemetry.Attributes (
 ) where
 
 import Data.Data (Data)
+import Data.Default.Class (Default (def))
 import qualified Data.HashMap.Strict as H
 import Data.Hashable (Hashable)
 import Data.Int (Int64)
@@ -139,6 +140,10 @@ data AttributeLimits = AttributeLimits
   }
   deriving stock (Read, Show, Eq, Ord, Data, Generic)
   deriving anyclass (Hashable)
+
+
+instance Default AttributeLimits where
+  def = defaultAttributeLimits
 
 
 -- | Convert a Haskell value to a 'PrimitiveAttribute' value.

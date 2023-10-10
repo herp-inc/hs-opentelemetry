@@ -39,6 +39,7 @@ module OpenTelemetry.Instrumentation.HttpClient (
 import Control.Exception
 import Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.ByteString.Lazy as L
+import Data.Default.Class (Default (def))
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Network.HTTP.Client as X hiding (
   Manager,
@@ -102,6 +103,10 @@ data ManagerSettings = ManagerSettings
   -- ^ A used tracer provider. When you want to use the global tracer provider, set 'Nothing'.
   , config :: HttpClientInstrumentationConfig
   }
+
+
+instance Default ManagerSettings where
+  def = defaultManagerSettings
 
 
 defaultManagerSettings :: ManagerSettings

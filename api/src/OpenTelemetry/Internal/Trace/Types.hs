@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StrictData #-}
 
@@ -11,6 +12,7 @@ import Control.Concurrent.Async (Async)
 import Control.Exception (SomeException)
 import Control.Monad.IO.Class
 import Data.Bits
+import Data.Default.Class (Default (def))
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
 import Data.Hashable (Hashable)
@@ -232,6 +234,16 @@ data SpanArguments = SpanArguments
   }
 
 
+instance Default SpanArguments where
+  def =
+    SpanArguments
+      { kind = Internal
+      , attributes = []
+      , links = []
+      , startTime = Nothing
+      }
+
+
 -- | The outcome of a call to 'OpenTelemetry.Trace.forceFlush'
 data FlushResult
   = -- | One or more spans did not export from all associated exporters
@@ -381,7 +393,7 @@ instance Show Span where
  sampling configuration to decide whether or not to sample the trace.
 -}
 defaultTraceFlags :: TraceFlags
-defaultTraceFlags = TraceFlags 0
+defaultTraceFlags = def
 
 
 -- | Will the trace associated with this @TraceFlags@ value be sampled?
@@ -532,6 +544,10 @@ data SpanLimits = SpanLimits
   , linkAttributeCountLimit :: Maybe Int
   }
   deriving (Show, Eq)
+
+
+instance Default SpanLimits where
+  def = defaultSpanLimits
 
 
 defaultSpanLimits :: SpanLimits

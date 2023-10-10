@@ -76,6 +76,7 @@ library
     , charset
     , clock
     , containers
+    , data-default-class
     , ghc-prim
     , hashable
     , http-types
@@ -115,6 +116,7 @@ test-suite hs-opentelemetry-api-test
     , charset
     , clock
     , containers
+    , data-default-class
     , ghc-prim
     , hashable
     , hs-opentelemetry-api

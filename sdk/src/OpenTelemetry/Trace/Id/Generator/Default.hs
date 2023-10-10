@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 -----------------------------------------------------------------------------
 
@@ -18,6 +19,7 @@ module OpenTelemetry.Trace.Id.Generator.Default (
   defaultIdGenerator,
 ) where
 
+import Data.Default.Class (Default (def))
 import OpenTelemetry.Trace.Id.Generator (IdGenerator (..))
 import System.IO.Unsafe (unsafePerformIO)
 import System.Random.MWC
@@ -52,3 +54,7 @@ defaultIdGenerator = unsafePerformIO $ do
     }
 {-# NOINLINE defaultIdGenerator #-}
 #endif
+
+
+instance Default IdGenerator where
+  def = defaultIdGenerator
