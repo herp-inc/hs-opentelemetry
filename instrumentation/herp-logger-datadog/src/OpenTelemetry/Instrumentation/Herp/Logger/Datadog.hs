@@ -1,8 +1,13 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {- | This is herp-logger with connections of OpenTelemetry Traces and Logs.
 
@@ -13,12 +18,13 @@ This logger requires 'Otel.Tracer' to retrieve OpenTelemetry context additionall
 -}
 module OpenTelemetry.Instrumentation.Herp.Logger.Datadog (
   (Orig..=),
-  Orig.Logger (..),
-  Orig.HasLogger (..),
+  Logger (..),
+  HasLogger (..),
   Orig.LogLevel (..),
   Orig.LoggerConfig (..),
-  Orig.newLogger,
-  Orig.withLogger,
+  newLogger,
+  withLogger,
+  makeLogger,
   Orig.defaultLoggerConfig,
   logM,
   logOtherM,
@@ -49,7 +55,6 @@ module OpenTelemetry.Instrumentation.Herp.Logger.Datadog (
 ) where
 
 import Control.Applicative (Alternative ((<|>)))
-import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
 import qualified Control.Monad.Logger as ML
 import Control.Monad.Reader.Class (MonadReader (ask))
@@ -59,6 +64,7 @@ import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
+import GHC.Generics (Generic)
 import Herp.Logger ((.=))
 import qualified Herp.Logger as Orig
 import qualified Herp.Logger.LogLevel as Orig
@@ -71,68 +77,104 @@ import qualified OpenTelemetry.Trace.Core as Otel
 import qualified OpenTelemetry.Vendor.Datadog as Datadog
 
 
-logIO :: MonadIO m => Otel.Tracer -> Orig.Logger -> Orig.Payload -> m ()
-logIO tracer logger payload = do
+data Logger = Logger {original :: Orig.Logger, tracer :: Otel.Tracer} deriving stock (Generic)
+
+
+makeLogger :: Orig.Logger -> Otel.TracerProvider -> Logger
+makeLogger original provider =
+  Logger
+    { original
+    , tracer = Otel.makeTracer provider "hs-opentelemetry-instrumentation-herp-logger-datadog" Otel.tracerOptions
+    }
+
+
+newLogger :: Orig.LoggerConfig -> Otel.TracerProvider -> IO Logger
+newLogger config provider = do
+  original <- Orig.newLogger config
+  pure $ makeLogger original provider
+
+
+withLogger :: Orig.LoggerConfig -> Otel.TracerProvider -> (Logger -> IO a) -> IO a
+withLogger config provider f =
+  Orig.withLogger config $ \original -> f $ makeLogger original provider
+
+
+class HasLogger a where
+  toLogger :: a -> Logger
+
+
+instance HasLogger Logger where
+  toLogger = id
+
+
+instance Otel.HasTracer Logger where
+  tracerL f Logger {tracer, original} = (\tracer -> Logger {original, tracer}) <$> f tracer
+
+
+-- This requires UndecidableInstances, and is orphan.
+instance {-# OVERLAPPABLE #-} HasLogger a => Orig.HasLogger a where
+  toLogger = original . toLogger
+
+
+logIO :: MonadIO m => Logger -> Orig.Payload -> m ()
+logIO Logger {original = logger, tracer} payload = do
   context <- Otel.getContext
   payload' <- datadogPayload (Otel.getTracerTracerProvider tracer) $ Otel.lookupSpan context
   Orig.logIO logger (payload' <> payload)
 {-# INLINE logIO #-}
 
 
-logM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.Payload -> m ()
+logM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logM payload = do
-  r <- ask
-  void $ flip Otel.tracerL r $ \tracer -> do
-    logIO tracer (Orig.toLogger r) payload
-    pure tracer
+  logger <- toLogger <$> ask
+  logIO logger payload
 {-# INLINE logM #-}
 
 
-logOtherM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.LogLevel -> Orig.Payload -> m ()
+logOtherM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.LogLevel -> Orig.Payload -> m ()
 logOtherM logLevel payload = logM $ Orig.level logLevel <> payload
 
 
-logDebugM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.Payload -> m ()
+logDebugM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logDebugM = logOtherM Orig.Debug
 
 
-logInfoM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.Payload -> m ()
+logInfoM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logInfoM = logOtherM Orig.Informational
 
 
-logNoticeM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.Payload -> m ()
+logNoticeM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logNoticeM = logOtherM Orig.Notice
 
 
-logWarnM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.Payload -> m ()
+logWarnM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logWarnM = logOtherM Orig.Warning
 
 
-logErrorM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.Payload -> m ()
+logErrorM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logErrorM = logOtherM Orig.Error
 
 
-logCritM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.Payload -> m ()
+logCritM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logCritM = logOtherM Orig.Critical
 
 
-logAlertM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.Payload -> m ()
+logAlertM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logAlertM = logOtherM Orig.Alert
 
 
-logEmergM :: (MonadIO m, MonadReader r m, Orig.HasLogger r, Otel.HasTracer r) => Orig.Payload -> m ()
+logEmergM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logEmergM = logOtherM Orig.Emergency
 
 
-runLoggingT :: Otel.Tracer -> Orig.Logger -> ML.LoggingT m a -> m a
-runLoggingT tracer logger (ML.LoggingT run) = run $ toLoggerIO tracer logger
+runLoggingT :: Logger -> ML.LoggingT m a -> m a
+runLoggingT logger (ML.LoggingT run) = run $ toLoggerIO logger
 
 
-toLoggerIO :: Otel.Tracer -> Orig.Logger -> ML.Loc -> ML.LogSource -> ML.LogLevel -> ML.LogStr -> IO ()
-toLoggerIO tracer logger loc logSrc lv logStr = do
+toLoggerIO :: Logger -> ML.Loc -> ML.LogSource -> ML.LogLevel -> ML.LogStr -> IO ()
+toLoggerIO logger loc logSrc lv logStr = do
   let msg = Text.decodeUtf8 $ ML.fromLogStr $ ML.defaultLogStr loc logSrc lv logStr
   logIO
-    tracer
     logger
     [ Orig.message msg
     , case Orig.convertLogLevel lv of
