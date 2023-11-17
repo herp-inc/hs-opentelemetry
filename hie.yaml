@@ -53,6 +53,9 @@ cradle:
             - path: "examples/yesod-subsite/src/Subsite/Data.hs"
               component: "yesod-subsite:exe:yesod-subsite"
 
+            - path: "examples/http-server/main.hs"
+              component: "http-server:exe:http-server"
+
             - path: "exporters/handle/src"
               component: "lib:hs-opentelemetry-exporter-handle"
 
@@ -91,6 +94,9 @@ cradle:
 
             - path: "instrumentation/hedis/gen"
               component: "lib:hs-opentelemetry-instrumentation-hedis"
+
+            - path: "instrumentation/herp-logger-datadog/src"
+              component: "lib:hs-opentelemetry-instrumentation-herp-logger-datadog"
 
             - path: "instrumentation/hspec/src"
               component: "lib:hs-opentelemetry-instrumentation-hspec"
@@ -184,3 +190,9 @@ cradle:
 
             - path: "utils/exceptions/test"
               component: "hs-opentelemetry-utils-exceptions:test:exceptions-test"
+
+            - path: "vendors/datadog"
+              component: "lib:hs-opentelemetry-vendor-datadog"
+
+            - path: "vendors/datadog/test/spec"
+              component: "hs-opentelemetry-vendors-datadog:test:spec"

@@ -39,13 +39,14 @@ module OpenTelemetry.Trace.Monad (
   runTracerT,
 ) where
 
+import Control.Applicative (Const (Const, getConst))
 import Control.Monad.IO.Unlift (MonadIO, MonadUnliftIO)
 import Control.Monad.Identity (IdentityT)
 import Control.Monad.Reader (MonadReader (ask), ReaderT (runReaderT))
 import Control.Monad.Trans (MonadTrans (lift))
 import Data.Text (Text)
 import GHC.Stack (CallStack, HasCallStack, callStack)
-import OpenTelemetry.Trace.Core (Span, SpanArguments, Tracer, inSpan'')
+import OpenTelemetry.Trace.Core (HasTracer (tracerL), Span, SpanArguments, Tracer, inSpan'')
 
 
 -- | This is generally scoped by Monad stack to do different things
@@ -72,7 +73,7 @@ inSpan' = OpenTelemetry.Trace.Monad.inSpan'' callStack
 
 
 inSpan'' ::
-  (MonadUnliftIO m, MonadTracer m, HasCallStack) =>
+  (MonadUnliftIO m, MonadTracer m) =>
   CallStack ->
   Text ->
   SpanArguments ->
@@ -94,13 +95,13 @@ instance {-# OVERLAPPABLE #-} (MonadTracer m) => MonadTracer (ReaderT r m) where
 {- | Another 'MonadTracer' instance for 'ReaderT'.
 This @newtype@ data type is intended to be used with @DerivingVia@ language extension.
 -}
-newtype TracerT m a = TracerT (ReaderT Tracer m a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadUnliftIO, MonadFail, MonadReader Tracer)
+newtype TracerT s m a = TracerT (ReaderT s m a)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadUnliftIO, MonadFail, MonadReader s)
 
 
-runTracerT :: Tracer -> TracerT m a -> m a
-runTracerT tracer (TracerT m) = runReaderT m tracer
+runTracerT :: s -> TracerT s m a -> m a
+runTracerT s (TracerT m) = runReaderT m s
 
 
-instance (Monad m) => MonadTracer (TracerT m) where
-  getTracer = ask
+instance (Monad m, HasTracer s) => MonadTracer (TracerT s m) where
+  getTracer = ask >>= pure . getConst . tracerL Const

@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-api
-version:             0.0.3.6
+version:             0.1.0.0
 
 <<: *preface
 
@@ -44,6 +44,7 @@ dependencies:
 - ghc-prim
 - unliftio-core
 - vector-builder
+- data-default-class
 
 library:
   source-dirs: src

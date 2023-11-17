@@ -28,9 +28,10 @@ import Data.ByteString (ByteString)
 import Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text as Text
+import Data.Version (showVersion)
 import GHC.Exts (IsList (fromList, toList))
 import qualified GHC.Generics as G
-import GHC.Stack (HasCallStack)
+import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified Network.GRPC.HighLevel.Client as GRPC
 import qualified Network.GRPC.HighLevel.Server as GRPC
 import qualified Network.GRPC.LowLevel.Call as GRPC
@@ -39,15 +40,20 @@ import qualified OpenTelemetry.Context as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.Propagator as Otel
 import qualified OpenTelemetry.Trace.Core as Otel
+import qualified Paths_hs_opentelemetry_instrumentation_grpc_haskell
 import qualified Proto3.Suite.DotProto.Generate as Proto3
 
 
-propagatableTraceableServer :: (Traceable service, Propagatable service, HasCallStack) => Otel.Tracer -> Otel.SpanArguments -> service -> service
-propagatableTraceableServer tracer args = propagatableService tracer . traceableService tracer args
+propagatableTraceableServer :: (Traceable service, Propagatable service, HasCallStack) => Otel.TracerProvider -> service -> service
+propagatableTraceableServer provider = withFrozenCallStack $ propagatableService tracer . traceableService tracer Otel.defaultSpanArguments {Otel.kind = Otel.Server} where tracer = makeTracer provider
 
 
-propagatableTraceableClient :: (Traceable service, Propagatable service, HasCallStack) => Otel.Tracer -> Otel.SpanArguments -> service -> service
-propagatableTraceableClient tracer args = traceableService tracer args . propagatableService tracer
+propagatableTraceableClient :: (Traceable service, Propagatable service, HasCallStack) => Otel.TracerProvider -> service -> service
+propagatableTraceableClient provider = withFrozenCallStack $ traceableService tracer Otel.defaultSpanArguments {Otel.kind = Otel.Client} . propagatableService tracer where tracer = makeTracer provider
+
+
+makeTracer :: Otel.TracerProvider -> Otel.Tracer
+makeTracer provider = Otel.makeTracer provider (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-grpc-haskell" $ Text.pack $ showVersion Paths_hs_opentelemetry_instrumentation_grpc_haskell.version) (Otel.TracerOptions Nothing)
 
 
 class Traceable service where
@@ -65,17 +71,17 @@ class Traceable service where
   -- @
   -- 'traceableService' tracer Service { rpc1 } = Service { rpc1 = 'inSpan' tracer "Service.rpc1" rpc1 }
   -- @
-  traceableService :: Otel.Tracer -> Otel.SpanArguments -> service -> service
-  default traceableService :: (G.Generic service, GTraceable (G.Rep service)) => Otel.Tracer -> Otel.SpanArguments -> service -> service
-  traceableService tracer args = G.to . gTraceableService (Proto3.IsPrefixed True) tracer args . G.from
+  traceableService :: HasCallStack => Otel.Tracer -> Otel.SpanArguments -> service -> service
+  default traceableService :: (G.Generic service, GTraceable (G.Rep service), HasCallStack) => Otel.Tracer -> Otel.SpanArguments -> service -> service
+  traceableService tracer args = withFrozenCallStack $ G.to . gTraceableService (Proto3.IsPrefixed True) tracer args . G.from
 
 
 class GTraceable rep where
-  gTraceableService :: Proto3.IsPrefixed -> Otel.Tracer -> Otel.SpanArguments -> rep a -> rep a
+  gTraceableService :: HasCallStack => Proto3.IsPrefixed -> Otel.Tracer -> Otel.SpanArguments -> rep a -> rep a
 
 
 class GTraceableSelectors rep where
-  gTraceableSelectors :: Proto3.IsPrefixed -> Otel.Tracer -> String -> Otel.SpanArguments -> rep a -> rep a
+  gTraceableSelectors :: HasCallStack => Proto3.IsPrefixed -> Otel.Tracer -> String -> Otel.SpanArguments -> rep a -> rep a
 
 
 instance (GTraceableSelectors f, G.Datatype dc, G.Constructor cc) => GTraceable (G.M1 G.D dc (G.M1 G.C cc f)) where
@@ -128,7 +134,7 @@ class Propagatable service where
   -- | Extract propagation headers from each rpc request on a server or inject propagation headers into each rpc request on a client.
   propagatableService :: HasCallStack => Otel.Tracer -> service -> service
   default propagatableService :: (G.Generic service, GPropagatable (G.Rep service), HasCallStack) => Otel.Tracer -> service -> service
-  propagatableService tracer = G.to . gPropagatableService tracer . G.from
+  propagatableService tracer = withFrozenCallStack $ G.to . gPropagatableService tracer . G.from
 
 
 class GPropagatable rep where

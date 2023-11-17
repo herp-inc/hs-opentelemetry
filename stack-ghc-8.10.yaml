@@ -47,6 +47,7 @@ packages:
 - instrumentation/cloudflare
 # - instrumentation/grpc-haskell # able to be built with cabal
 - instrumentation/hedis
+# - instrumentation/herp-logger-datadog
 - instrumentation/http-client
 - instrumentation/persistent
 - instrumentation/persistent-mysql
@@ -57,6 +58,7 @@ packages:
 - examples/yesod-minimal
 - examples/yesod-subsite
 - utils/exceptions
+- vendors/datadog
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
@@ -74,6 +76,8 @@ extra-deps:
 - persistent-postgresql-2.13.4.0
 - proto-lens-0.7.1.0
 - proto-lens-runtime-0.7.0.1
+# - github: herp-inc/herp-logger
+#   commit: v0.3
 # just for testing
 # - mwc-random-0.14.0.0
 # - random-1.1

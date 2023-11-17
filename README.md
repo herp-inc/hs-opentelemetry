@@ -1,8 +1,6 @@
-### herp-inc/hs-opentelemetry のブランチ運用
+### herp-inc/hs-opentelemetry の運用
 
-- 機能追加のときは herp/main から機能ブランチを作り herp/main にマージする
-- iand675/main に還元するときは、iand675/main からブランチを作り上記機能ブランチのコミットをチェリーピックし PR を作る
-- iand675/main の更新を取り込むときはリベースする
+https://scrapbox.io/herp-inc/hs-opentelemetry
 
 ---
 

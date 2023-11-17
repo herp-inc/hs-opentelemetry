@@ -94,7 +94,7 @@ instance YesodPersist Minimal where
       runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ setAlterBackend defaultSqlPoolHooks $ \conn -> do
         -- TODO, could probably not do this on each runDB call.
         staticAttrs <- case getSimpleConn conn of
-          Nothing -> pure []
+          Nothing -> pure mempty
           Just pgConn -> staticConnectionAttributes pgConn
         wrapSqlBackend staticAttrs conn
 
@@ -104,9 +104,8 @@ getRootR = do
   -- Wouldn't put this here in a real app
   m <- inSpan "initialize http manager" defaultSpanArguments $ do
     liftIO $ newManager defaultManagerSettings
-  let httpConfig = httpClientInstrumentationConfig
   req <- parseUrlThrow "http://localhost:3000/api"
-  resp <- httpLbs httpConfig req m
+  resp <- httpLbs req m
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 

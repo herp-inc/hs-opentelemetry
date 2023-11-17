@@ -6,8 +6,10 @@ import qualified Network.HTTP.Types.Status as H
 import qualified Network.Wai as W
 import qualified Network.Wai.Handler.Warp as W
 import OpenTelemetry.Instrumentation.HttpClient (
-  httpClientInstrumentationConfig,
+  Manager (),
+  defaultManagerSettings,
   httpLbs,
+  newManager,
  )
 import OpenTelemetry.Instrumentation.Wai (newOpenTelemetryWaiMiddleware)
 import OpenTelemetry.Logging.Core (Log)
@@ -24,7 +26,6 @@ import System.Environment (getArgs)
 main :: IO ()
 main = do
   args <- getArgs
-  httpClient <- H.newManager H.defaultManagerSettings
   do
     (processors, tracerProviderOptions) <- getTracerProviderInitializationOptions
     let
@@ -35,16 +36,17 @@ main = do
           _ -> tracerProviderOptions'
     tracerProvider <- createTracerProvider processors tracerProviderOptions''
     setGlobalTracerProvider tracerProvider
+  httpClient <- newManager defaultManagerSettings
   tracerMiddleware <- newOpenTelemetryWaiMiddleware
   W.run 7777 $ tracerMiddleware $ app httpClient
 
 
-app :: H.Manager -> W.Application
+app :: Manager -> W.Application
 app httpManager req res =
   case W.pathInfo req of
     ["1"] -> do
       newReq <- H.parseRequest "http://localhost:7777/2"
-      newRes <- httpLbs httpClientInstrumentationConfig newReq httpManager
+      newRes <- httpLbs newReq httpManager
       res $ W.responseLBS H.ok200 [] $ "1 (" <> H.responseBody newRes <> ")"
     ["2"] -> res $ W.responseLBS H.ok200 [] "2"
     _ -> res $ W.responseLBS H.ok200 [] "other"

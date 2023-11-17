@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StrictData #-}
 
@@ -11,7 +12,9 @@ import Control.Concurrent.Async (Async)
 import Control.Exception (SomeException)
 import Control.Monad.IO.Class
 import Data.Bits
+import Data.Default.Class (Default (def))
 import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as H
 import Data.Hashable (Hashable)
 import Data.IORef (IORef, readIORef)
 import Data.String (IsString (..))
@@ -179,7 +182,7 @@ This is not the case in scatter/gather and batch scenarios.
 data NewLink = NewLink
   { linkContext :: !SpanContext
   -- ^ @SpanContext@ of the @Span@ to link to.
-  , linkAttributes :: [(Text, Attribute)]
+  , linkAttributes :: H.HashMap Text Attribute
   -- ^ Zero or more Attributes further describing the link.
   }
   deriving (Show)
@@ -220,7 +223,7 @@ data SpanArguments = SpanArguments
   { kind :: SpanKind
   -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
   -- of the various values that may be specified.
-  , attributes :: [(Text, Attribute)]
+  , attributes :: H.HashMap Text Attribute
   -- ^ An initial set of attributes that may be set on initial 'Span' creation.
   -- These attributes are provided to 'Processor's, so they may be useful in some
   -- scenarios where calling `addAttribute` or `addAttributes` is too late.
@@ -229,6 +232,16 @@ data SpanArguments = SpanArguments
   , startTime :: Maybe Timestamp
   -- ^ An explicit start time, if the span has already begun.
   }
+
+
+instance Default SpanArguments where
+  def =
+    SpanArguments
+      { kind = Internal
+      , attributes = []
+      , links = []
+      , startTime = Nothing
+      }
 
 
 -- | The outcome of a call to 'OpenTelemetry.Trace.forceFlush'
@@ -380,7 +393,7 @@ instance Show Span where
  sampling configuration to decide whether or not to sample the trace.
 -}
 defaultTraceFlags :: TraceFlags
-defaultTraceFlags = TraceFlags 0
+defaultTraceFlags = def
 
 
 -- | Will the trace associated with this @TraceFlags@ value be sampled?
@@ -467,7 +480,7 @@ newtype NonRecordingSpan = NonRecordingSpan SpanContext
 data NewEvent = NewEvent
   { newEventName :: Text
   -- ^ The name of an event. Ideally this should be a relatively unique, but low cardinality value.
-  , newEventAttributes :: [(Text, Attribute)]
+  , newEventAttributes :: H.HashMap Text Attribute
   -- ^ Additional context or metadata related to the event, (stack traces, callsites, etc.).
   , newEventTimestamp :: Maybe Timestamp
   -- ^ The time that the event occurred.
@@ -518,7 +531,7 @@ data SamplingResult
 data Sampler = Sampler
   { getDescription :: Text
   -- ^ Returns the sampler name or short description with the configuration. This may be displayed on debug pages or in the logs.
-  , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, [(Text, Attribute)], TraceState)
+  , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, H.HashMap Text Attribute, TraceState)
   }
 
 
@@ -531,6 +544,10 @@ data SpanLimits = SpanLimits
   , linkAttributeCountLimit :: Maybe Int
   }
   deriving (Show, Eq)
+
+
+instance Default SpanLimits where
+  def = defaultSpanLimits
 
 
 defaultSpanLimits :: SpanLimits

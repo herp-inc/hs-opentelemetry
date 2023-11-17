@@ -1,7 +1,9 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -105,10 +107,10 @@ module OpenTelemetry.Trace.Core (
   OpenTelemetry.Trace.Core.addAttribute,
   OpenTelemetry.Trace.Core.addAttributes,
   spanGetAttributes,
-  Attribute (..),
-  ToAttribute (..),
-  PrimitiveAttribute (..),
-  ToPrimitiveAttribute (..),
+  A.Attribute (..),
+  A.ToAttribute (..),
+  A.PrimitiveAttribute (..),
+  A.ToPrimitiveAttribute (..),
 
   -- ** Recording error information
   recordException,
@@ -145,6 +147,8 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Data.Coerce
+import Data.Default.Class (Default (def))
+import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -154,7 +158,6 @@ import qualified Data.Vector as V
 import Data.Word (Word64)
 import GHC.Stack
 import Network.HTTP.Types
-import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common
 import OpenTelemetry.Context
@@ -199,22 +202,8 @@ createSpan ::
   SpanArguments ->
   -- | The created span.
   m Span
-createSpan t c n args = do
-  createSpanWithoutCallStack t c n $ case getCallStack callStack of
-    [] -> args
-    (_, loc) : rest ->
-      let addFunction = case rest of
-            (fn, _) : _ -> (("code.function", toAttribute $ T.pack fn) :)
-            [] -> id
-       in args
-            { attributes =
-                addFunction $
-                  ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-                    : ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-                    : ("code.lineno", toAttribute $ srcLocStartLine loc)
-                    : ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-                    : attributes args
-            }
+createSpan t c n args@SpanArguments {attributes} =
+  createSpanWithoutCallStack t c n args {attributes = H.union attributes $ makeCodeAttributes callStack}
 
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
@@ -272,7 +261,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
           mkRecordingSpan = do
             st <- maybe getTimestamp pure startTime
             tid <- myThreadId
-            let additionalInfo = [("thread.id", toAttribute $ getThreadId tid)]
+            let additionalInfo = [("thread.id", A.toAttribute $ getThreadId tid)]
                 is =
                   ImmutableSpan
                     { spanName = n
@@ -282,8 +271,8 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                     , spanAttributes =
                         A.addAttributes
                           (limitBy t spanAttributeCountLimit)
-                          emptyAttributes
-                          (concat [additionalInfo, attrs, attributes])
+                          A.emptyAttributes
+                          (H.unions [additionalInfo, attrs, attributes])
                     , spanLinks =
                         let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                          in frozenBoundedCollection limitedLinks $ fmap freezeLink links
@@ -345,7 +334,7 @@ inSpan' t = inSpan'' t callStack
 
 
 inSpan'' ::
-  (MonadUnliftIO m, HasCallStack) =>
+  (MonadUnliftIO m) =>
   Tracer ->
   -- | Record the location of the span in the codebase using the provided
   -- callstack for source location info.
@@ -355,24 +344,13 @@ inSpan'' ::
   SpanArguments ->
   (Span -> m a) ->
   m a
-inSpan'' t cs n args f = do
+inSpan'' t cs n args f =
   bracketError
     ( liftIO $ do
         ctx <- getContext
         s <- createSpanWithoutCallStack t ctx n args
         adjustContext (insertSpan s)
-        whenSpanIsRecording s $ do
-          case getCallStack cs of
-            [] -> pure ()
-            (fn, loc) : _ -> do
-              OpenTelemetry.Trace.Core.addAttributes
-                s
-                [ ("code.function", toAttribute $ T.pack fn)
-                , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-                , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-                , ("code.lineno", toAttribute $ srcLocStartLine loc)
-                , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-                ]
+        whenSpanIsRecording s $ addAttributes s $ makeCodeAttributes cs
         pure (lookupSpan ctx, s)
     )
     ( \e (parent, s) -> liftIO $ do
@@ -384,6 +362,23 @@ inSpan'' t cs n args f = do
           maybe (removeSpan ctx) (`insertSpan` ctx) parent
     )
     (\(_, s) -> f s)
+
+
+makeCodeAttributes :: CallStack -> H.HashMap Text A.Attribute
+makeCodeAttributes callStack' =
+  case getCallStack callStack' of
+    [] -> H.empty
+    (_, loc) : rest ->
+      H.union
+        [ ("code.namespace", A.toAttribute $ T.pack $ srcLocModule loc)
+        , ("code.filepath", A.toAttribute $ T.pack $ srcLocFile loc)
+        , ("code.lineno", A.toAttribute $ srcLocStartLine loc)
+        , ("code.column", A.toAttribute $ srcLocStartCol loc)
+        , ("code.package", A.toAttribute $ T.pack $ srcLocPackage loc)
+        ]
+        $ case rest of
+          (fn, _) : _ -> [("code.function", A.toAttribute $ T.pack fn)]
+          [] -> []
 
 
 {- | Returns whether the the @Span@ is currently recording. If a span
@@ -430,7 +425,7 @@ addAttribute ::
 addAttribute (Span s) k v = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
-        OpenTelemetry.Attributes.addAttribute
+        A.addAttribute
           (limitBy (spanTracer i) spanAttributeCountLimit)
           (spanAttributes i)
           k
@@ -446,11 +441,11 @@ addAttribute (Dropped _) _ _ = pure ()
 
  @since 0.0.1.0
 -}
-addAttributes :: (MonadIO m) => Span -> [(Text, A.Attribute)] -> m ()
+addAttributes :: MonadIO m => Span -> H.HashMap Text A.Attribute -> m ()
 addAttributes (Span s) attrs = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
-        OpenTelemetry.Attributes.addAttributes
+        A.addAttributes
           (limitBy (spanTracer i) spanAttributeCountLimit)
           (spanAttributes i)
           attrs
@@ -475,7 +470,7 @@ addEvent (Span s) NewEvent {..} = liftIO $ do
               , eventAttributes =
                   A.addAttributes
                     (limitBy (spanTracer i) eventAttributeCountLimit)
-                    emptyAttributes
+                    A.emptyAttributes
                     newEventAttributes
               , eventTimestamp = t
               }
@@ -558,7 +553,7 @@ endSpan (Dropped _) _ = pure ()
 
  @since 0.0.1.0
 -}
-recordException :: (MonadIO m, Exception e) => Span -> [(Text, Attribute)] -> Maybe Timestamp -> e -> m ()
+recordException :: (MonadIO m, Exception e) => Span -> H.HashMap Text A.Attribute -> Maybe Timestamp -> e -> m ()
 recordException s attrs ts e = liftIO $ do
   cs <- whoCreated e
   let message = T.pack $ show e
@@ -566,11 +561,12 @@ recordException s attrs ts e = liftIO $ do
     NewEvent
       { newEventName = "exception"
       , newEventAttributes =
-          attrs
-            ++ [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
-               , ("exception.message", A.toAttribute message)
-               , ("exception.stacktrace", A.toAttribute $ T.unlines $ map T.pack cs)
-               ]
+          H.union
+            attrs
+            [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
+            , ("exception.message", A.toAttribute message)
+            , ("exception.stacktrace", A.toAttribute $ T.unlines $ map T.pack cs)
+            ]
       , newEventTimestamp = ts
       }
 
@@ -640,20 +636,20 @@ limitBy ::
   Tracer ->
   -- | Attribute count
   (SpanLimits -> Maybe Int) ->
-  AttributeLimits
+  A.AttributeLimits
 limitBy t countF =
-  AttributeLimits
+  A.AttributeLimits
     { attributeCountLimit = countLimit
     , attributeLengthLimit = lengthLimit
     }
   where
     countLimit =
       countF (tracerProviderSpanLimits $ tracerProvider t)
-        <|> attributeCountLimit
+        <|> A.attributeCountLimit
           (tracerProviderAttributeLimits $ tracerProvider t)
     lengthLimit =
       spanAttributeValueLengthLimit (tracerProviderSpanLimits $ tracerProvider t)
-        <|> attributeLengthLimit
+        <|> A.attributeLengthLimit
           (tracerProviderAttributeLimits $ tracerProvider t)
 
 
@@ -671,7 +667,7 @@ data TracerProviderOptions = TracerProviderOptions
   { tracerProviderOptionsIdGenerator :: IdGenerator
   , tracerProviderOptionsSampler :: Sampler
   , tracerProviderOptionsResources :: MaterializedResources
-  , tracerProviderOptionsAttributeLimits :: AttributeLimits
+  , tracerProviderOptionsAttributeLimits :: A.AttributeLimits
   , tracerProviderOptionsSpanLimits :: SpanLimits
   , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
   , tracerProviderOptionsLogger :: Log Text -> IO ()
@@ -690,7 +686,7 @@ emptyTracerProviderOptions =
     dummyIdGenerator
     (parentBased $ parentBasedOptions alwaysOn)
     emptyMaterializedResources
-    defaultAttributeLimits
+    A.defaultAttributeLimits
     defaultSpanLimits
     mempty
     (\_ -> pure ())
@@ -773,6 +769,10 @@ class HasTracer s where
   tracerL :: Lens' s Tracer
 
 
+instance HasTracer Tracer where
+  tracerL = id
+
+
 makeTracer :: TracerProvider -> InstrumentationLibrary -> TracerOptions -> Tracer
 makeTracer tp n TracerOptions {} = Tracer n tp
 
@@ -802,13 +802,7 @@ getTracerTracerProvider = tracerProvider
  - `startTime`: `Nothing` (`getTimestamp` will be called upon `Span` creation)
 -}
 defaultSpanArguments :: SpanArguments
-defaultSpanArguments =
-  SpanArguments
-    { kind = Internal
-    , attributes = []
-    , links = []
-    , startTime = Nothing
-    }
+defaultSpanArguments = def
 
 
 {- | This method provides a way for provider to do any cleanup required.

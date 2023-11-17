@@ -1,4 +1,7 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
 
 {- | Offer a few options for HTTP instrumentation
 
@@ -8,6 +11,22 @@
 - Modify the global manager to pull from the thread-local state (least good, can't be helped sometimes)
 -}
 module OpenTelemetry.Instrumentation.HttpClient (
+  Manager (..),
+  newManager,
+  ManagerSettings (..),
+  defaultManagerSettings,
+  managerConnCount,
+  managerRawConnection,
+  managerTlsConnection,
+  managerResponseTimeout,
+  managerRetryableException,
+  managerWrapException,
+  managerIdleConnectionCount,
+  managerModifyRequest,
+  managerModifyResponse,
+  managerSetProxy,
+  managerSetInsecureProxy,
+  managerSetSecureProxy,
   withResponse,
   httpLbs,
   httpNoBody,
@@ -17,10 +36,36 @@ module OpenTelemetry.Instrumentation.HttpClient (
   module X,
 ) where
 
+import Control.Exception
 import Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.ByteString.Lazy as L
-import Network.HTTP.Client as X hiding (httpLbs, httpNoBody, responseOpen, withResponse)
+import Data.Default.Class (Default (def))
+import GHC.Stack (HasCallStack, withFrozenCallStack)
+import Network.HTTP.Client as X hiding (
+  Manager,
+  ManagerSettings,
+  defaultManagerSettings,
+  httpLbs,
+  httpNoBody,
+  managerConnCount,
+  managerIdleConnectionCount,
+  managerModifyRequest,
+  managerModifyResponse,
+  managerRawConnection,
+  managerResponseTimeout,
+  managerRetryableException,
+  managerSetInsecureProxy,
+  managerSetProxy,
+  managerSetSecureProxy,
+  managerTlsConnection,
+  managerWrapException,
+  newManager,
+  responseOpen,
+  withResponse,
+ )
 import qualified Network.HTTP.Client as Client
+import qualified Network.HTTP.Client.Internal as Client
+import Network.Socket (HostAddress)
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Instrumentation.HttpClient.Raw (
   HttpClientInstrumentationConfig (..),
@@ -28,14 +73,110 @@ import OpenTelemetry.Instrumentation.HttpClient.Raw (
   httpTracerProvider,
   instrumentRequest,
   instrumentResponse,
+  makeTracer,
  )
 import OpenTelemetry.Trace.Core (
   SpanArguments (kind),
   SpanKind (Client),
+  Tracer,
+  TracerProvider,
   defaultSpanArguments,
-  inSpan',
+  inSpan,
  )
 import UnliftIO (MonadUnliftIO, askRunInIO)
+
+
+data Manager = Manager
+  { originalManager :: Client.Manager
+  , tracer :: Tracer
+  , config :: HttpClientInstrumentationConfig
+  }
+
+
+instance Client.HasHttpManager Manager where
+  getHttpManager = originalManager
+
+
+data ManagerSettings = ManagerSettings
+  { originalSettings :: Client.ManagerSettings
+  , tracerProvider :: Maybe TracerProvider
+  -- ^ A used tracer provider. When you want to use the global tracer provider, set 'Nothing'.
+  , config :: HttpClientInstrumentationConfig
+  }
+
+
+instance Default ManagerSettings where
+  def = defaultManagerSettings
+
+
+defaultManagerSettings :: ManagerSettings
+defaultManagerSettings =
+  ManagerSettings
+    { originalSettings = Client.defaultManagerSettings
+    , tracerProvider = Nothing
+    , config = httpClientInstrumentationConfig
+    }
+
+
+managerConnCount :: ManagerSettings -> Int
+managerConnCount = Client.managerConnCount . originalSettings
+
+
+managerRawConnection :: ManagerSettings -> IO (Maybe HostAddress -> String -> Int -> IO Client.Connection)
+managerRawConnection = Client.managerRawConnection . originalSettings
+
+
+managerTlsConnection :: ManagerSettings -> IO (Maybe HostAddress -> String -> Int -> IO Client.Connection)
+managerTlsConnection = Client.managerTlsConnection . originalSettings
+
+
+managerResponseTimeout :: ManagerSettings -> ResponseTimeout
+managerResponseTimeout = Client.managerResponseTimeout . originalSettings
+
+
+managerRetryableException :: ManagerSettings -> SomeException -> Bool
+managerRetryableException = Client.managerRetryableException . originalSettings
+
+
+managerWrapException :: ManagerSettings -> forall a. Request -> IO a -> IO a
+managerWrapException settings = Client.managerWrapException $ originalSettings settings
+
+
+managerIdleConnectionCount :: ManagerSettings -> Int
+managerIdleConnectionCount = Client.managerIdleConnectionCount . originalSettings
+
+
+managerModifyRequest :: ManagerSettings -> Request -> IO Request
+managerModifyRequest = Client.managerModifyRequest . originalSettings
+
+
+managerModifyResponse :: ManagerSettings -> Response BodyReader -> IO (Response BodyReader)
+managerModifyResponse = Client.managerModifyResponse . originalSettings
+
+
+managerSetProxy :: ProxyOverride -> ManagerSettings -> ManagerSettings
+managerSetProxy o settings@ManagerSettings {originalSettings} =
+  settings {originalSettings = Client.managerSetProxy o originalSettings}
+
+
+managerSetInsecureProxy :: ProxyOverride -> ManagerSettings -> ManagerSettings
+managerSetInsecureProxy o settings@ManagerSettings {originalSettings} =
+  settings {originalSettings = Client.managerSetInsecureProxy o originalSettings}
+
+
+managerSetSecureProxy :: ProxyOverride -> ManagerSettings -> ManagerSettings
+managerSetSecureProxy o settings@ManagerSettings {originalSettings} =
+  settings {originalSettings = Client.managerSetSecureProxy o originalSettings}
+
+
+newManager :: ManagerSettings -> IO Manager
+newManager ManagerSettings {originalSettings, tracerProvider, config} = do
+  originalManager <- Client.newManager originalSettings
+  tracer <-
+    case tracerProvider of
+      Just tp -> pure $ makeTracer tp
+      Nothing -> httpTracerProvider
+  pure $ Manager {originalManager, tracer, config}
 
 
 spanArgs :: SpanArguments
@@ -58,23 +199,22 @@ spanArgs = defaultSpanArguments {kind = Client}
  body.
 -}
 withResponse ::
-  (MonadUnliftIO m) =>
-  HttpClientInstrumentationConfig ->
+  (MonadUnliftIO m, HasCallStack) =>
   Client.Request ->
-  Client.Manager ->
+  Manager ->
   (Client.Response Client.BodyReader -> m a) ->
   m a
-withResponse httpConf req man f = do
-  t <- httpTracerProvider
-  inSpan' t "withResponse" spanArgs $ \_wrSpan -> do
-    ctxt <- getContext
-    -- TODO would like to capture the req/resp time specifically
-    -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
-    req' <- instrumentRequest httpConf ctxt req
-    runInIO <- askRunInIO
-    liftIO $ Client.withResponse req' man $ \resp -> do
-      _ <- instrumentResponse httpConf ctxt resp
-      runInIO $ f resp
+withResponse req Manager {originalManager, tracer, config} f =
+  withFrozenCallStack $ do
+    inSpan tracer "withResponse" spanArgs $ do
+      ctxt <- getContext
+      -- TODO would like to capture the req/resp time specifically
+      -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
+      req' <- instrumentRequest tracer config ctxt req
+      runInIO <- askRunInIO
+      liftIO $ Client.withResponse req' originalManager $ \resp -> do
+        _ <- instrumentResponse tracer config ctxt resp
+        runInIO $ f resp
 
 
 {- | A convenience wrapper around 'withResponse' which reads in the entire
@@ -83,29 +223,29 @@ withResponse httpConf req man f = do
  for memory efficiency. If you are anticipating a large response body, you
  are encouraged to use 'withResponse' and 'brRead' instead.
 -}
-httpLbs :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
-httpLbs httpConf req man = do
-  t <- httpTracerProvider
-  inSpan' t "httpLbs" spanArgs $ \_ -> do
-    ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
-    resp <- liftIO $ Client.httpLbs req' man
-    _ <- instrumentResponse httpConf ctxt resp
-    pure resp
+httpLbs :: (MonadUnliftIO m, HasCallStack) => Client.Request -> Manager -> m (Client.Response L.ByteString)
+httpLbs req Manager {originalManager, tracer, config} =
+  withFrozenCallStack $ do
+    inSpan tracer "httpLbs" spanArgs $ do
+      ctxt <- getContext
+      req' <- instrumentRequest tracer config ctxt req
+      resp <- liftIO $ Client.httpLbs req' originalManager
+      _ <- instrumentResponse tracer config ctxt resp
+      pure resp
 
 
 {- | A convenient wrapper around 'withResponse' which ignores the response
  body. This is useful, for example, when performing a HEAD request.
 -}
-httpNoBody :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
-httpNoBody httpConf req man = do
-  t <- httpTracerProvider
-  inSpan' t "httpNoBody" spanArgs $ \_ -> do
-    ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
-    resp <- liftIO $ Client.httpNoBody req' man
-    _ <- instrumentResponse httpConf ctxt resp
-    pure resp
+httpNoBody :: (MonadUnliftIO m, HasCallStack) => Client.Request -> Manager -> m (Client.Response ())
+httpNoBody req Manager {originalManager, tracer, config} =
+  withFrozenCallStack $ do
+    inSpan tracer "httpNoBody" spanArgs $ do
+      ctxt <- getContext
+      req' <- instrumentRequest tracer config ctxt req
+      resp <- liftIO $ Client.httpNoBody req' originalManager
+      _ <- instrumentResponse tracer config ctxt resp
+      pure resp
 
 
 {- | The most low-level function for initiating an HTTP request.
@@ -136,12 +276,12 @@ httpNoBody httpConf req man = do
  Content-Encoding: and Accept-Encoding: from request and response
  headers to be relayed.
 -}
-responseOpen :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
-responseOpen httpConf req man = do
-  t <- httpTracerProvider
-  inSpan' t "responseOpen" spanArgs $ \_ -> do
-    ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
-    resp <- liftIO $ Client.responseOpen req' man
-    _ <- instrumentResponse httpConf ctxt resp
-    pure resp
+responseOpen :: (MonadUnliftIO m, HasCallStack) => Client.Request -> Manager -> m (Client.Response Client.BodyReader)
+responseOpen req Manager {originalManager, tracer, config} =
+  withFrozenCallStack $ do
+    inSpan tracer "responseOpen" spanArgs $ do
+      ctxt <- getContext
+      req' <- instrumentRequest tracer config ctxt req
+      resp <- liftIO $ Client.responseOpen req' originalManager
+      _ <- instrumentResponse tracer config ctxt resp
+      pure resp

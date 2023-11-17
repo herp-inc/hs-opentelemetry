@@ -53,16 +53,15 @@ main = do
           { serverHost = Host . fromMaybe "localhost" . unHelpful $ bind
           , serverPort = Port . fromMaybe 50051 . unHelpful $ port
           }
-  tracer <- createTracer
-  let service = Otel.propagatableTraceableServer tracer Otel.defaultSpanArguments {Otel.kind = Otel.Server} Echo {echoDoEcho = doEcho}
+  tracerProvider <- createTracerProvider
+  let service = Otel.propagatableTraceableServer tracerProvider Echo {echoDoEcho = doEcho}
   echoServer service opts
 
 
-createTracer :: IO Otel.Tracer
-createTracer = do
+createTracerProvider :: IO Otel.TracerProvider
+createTracerProvider = do
   (processors, tracerProviderOptions) <- Otel.getTracerProviderInitializationOptions
-  tracerProvider <- Otel.createTracerProvider processors tracerProviderOptions
-  pure $ Otel.makeTracer tracerProvider "echo-server" Otel.tracerOptions
+  Otel.createTracerProvider processors tracerProviderOptions
 
 
 instance Otel.Traceable (Echo ServerRequest ServerResponse)

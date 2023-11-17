@@ -1,15 +1,13 @@
-import Data.Foldable (for_)
-import Data.List (intercalate, isPrefixOf, subsequences)
+import Data.List (intercalate, isPrefixOf)
 import Data.Maybe (mapMaybe)
-import Debug.Trace (trace, traceIO)
 import Distribution.Simple (Args, defaultMainWithHooks, simpleUserHooks)
 import qualified Distribution.Simple
 import Distribution.Simple.Setup (BuildFlags)
 import Distribution.Types.HookedBuildInfo (HookedBuildInfo, emptyHookedBuildInfo)
 import GHC.Stack (HasCallStack)
-import System.Directory (copyFile, createDirectoryIfMissing, getCurrentDirectory, getTemporaryDirectory, removeFile)
-import System.FilePath (takeDirectory, (</>))
-import System.IO (IOMode (ReadMode), hClose, hGetContents, hPutStr, hSetNewlineMode, noNewlineTranslation, openTempFile, stdin, withFile)
+import System.Directory (copyFile, createDirectoryIfMissing, getTemporaryDirectory, removeFile)
+import System.FilePath (takeDirectory)
+import System.IO (IOMode (ReadMode), hClose, hGetContents, hPutStr, hSetNewlineMode, noNewlineTranslation, openTempFile, withFile)
 
 
 main :: IO ()
@@ -23,7 +21,7 @@ append :: (RedisCtx m f, Otel.MonadTracer m, MonadUnliftIO m, HasCallStack) => B
 append = wrap2 "append" Orig.append
 @
 -}
-preBuild :: (HasCallStack) => Args -> BuildFlags -> IO HookedBuildInfo
+preBuild :: HasCallStack => Args -> BuildFlags -> IO HookedBuildInfo
 preBuild _ _ = do
   let
     sourceTextPath = "functions.txt"
@@ -49,7 +47,7 @@ preBuild _ _ = do
                   name = takeWhile (/= ' ') line
                   paramCount = length $ filter (== ('-', '>')) $ zip (init line) $ tail line
                   typ = replace oldConstraintText newConstraintText line
-                  term = name ++ " = wrap" ++ show paramCount ++ " \"" ++ name ++ "\" " ++ "Orig." ++ name
+                  term = name ++ " = withFrozenCallStack $ wrap" ++ show paramCount ++ " \"" ++ name ++ "\" " ++ "Orig." ++ name
                  in
                   if name == "command"
                     then Nothing -- becuase `command` has an unexposed type
@@ -71,7 +69,7 @@ preBuild _ _ = do
           , ""
           , "import Control.Monad.IO.Unlift (MonadUnliftIO)"
           , "import Data.ByteString (ByteString)"
-          , "import GHC.Stack (HasCallStack)"
+          , "import GHC.Stack (HasCallStack, withFrozenCallStack)"
           , "import qualified OpenTelemetry.Trace.Monad as Otel (MonadTracer)"
           , ""
           ]

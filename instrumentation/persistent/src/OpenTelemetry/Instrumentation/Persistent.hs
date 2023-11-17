@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -10,6 +11,7 @@ module OpenTelemetry.Instrumentation.Persistent (
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Acquire.Internal
+import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -17,6 +19,7 @@ import qualified Data.Vault.Strict as Vault
 import Database.Persist.Sql
 import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBackendHooks, getConnVault, getRDBMS, modifyConnVault, setConnHooks)
 import Database.Persist.SqlBackend.Internal
+import GHC.Stack (withFrozenCallStack)
 import OpenTelemetry.Attributes (Attributes)
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
@@ -52,7 +55,7 @@ lookupOriginalConnection :: SqlBackend -> Maybe SqlBackend
 lookupOriginalConnection = Vault.lookup originalConnectionKey . getConnVault
 
 
-connectionLevelAttributesKey :: Vault.Key [(Text, Attribute)]
+connectionLevelAttributesKey :: Vault.Key (H.HashMap Text Attribute)
 connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {-# NOINLINE connectionLevelAttributesKey #-}
 
@@ -63,34 +66,33 @@ connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 wrapSqlBackend ::
   (MonadIO m) =>
   -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
-  [(Text, Attribute)] ->
+  H.HashMap Text Attribute ->
   SqlBackend ->
   m SqlBackend
 wrapSqlBackend attrs conn_ = do
   tp <- getGlobalTracerProvider
-  wrapSqlBackend' tp attrs conn_
+  pure $ wrapSqlBackend' tp attrs conn_
 
 
 {- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
 so that queries are tracked appropriately in the tracing hierarchy.
 -}
 wrapSqlBackend' ::
-  (MonadIO m) =>
   TracerProvider ->
   -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
-  [(Text, Attribute)] ->
+  H.HashMap Text Attribute ->
   SqlBackend ->
-  m SqlBackend
-wrapSqlBackend' tp attrs conn_ = do
+  SqlBackend
+wrapSqlBackend' tp attrs conn_ =
   let conn = Data.Maybe.fromMaybe conn_ (lookupOriginalConnection conn_)
-  -- TODO add schema to tracerOptions?
-  let t = makeTracer tp "hs-opentelemetry-persistent" tracerOptions
-  let hooks =
+      -- TODO add schema to tracerOptions?
+      t = makeTracer tp "hs-opentelemetry-persistent" tracerOptions
+      hooks =
         emptySqlBackendHooks
           { hookGetStatement = \conn sql stmt -> do
               pure $
                 Statement
-                  { stmtQuery = \ps -> do
+                  { stmtQuery = withFrozenCallStack $ \ps -> do
                       ctxt <- getContext
                       let spanCreator = do
                             s <-
@@ -98,7 +100,7 @@ wrapSqlBackend' tp attrs conn_ = do
                                 t
                                 ctxt
                                 sql
-                                (defaultSpanArguments {kind = Client, attributes = ("db.statement", toAttribute sql) : attrs})
+                                (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute sql) attrs})
                             adjustContext (insertSpan s)
                             pure (lookupSpan ctxt, s)
                           spanCleanup (parent, s) = do
@@ -118,8 +120,8 @@ wrapSqlBackend' tp attrs conn_ = do
                                 throwIO err
                             )
                             (stmtQueryAcquireF f)
-                  , stmtExecute = \ps -> do
-                      inSpan' t sql (defaultSpanArguments {kind = Client, attributes = ("db.statement", toAttribute sql) : attrs}) $ \s -> do
+                  , stmtExecute = withFrozenCallStack $ \ps -> do
+                      inSpan' t sql (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute sql) attrs}) $ \s -> do
                         annotateBasics s conn
                         stmtExecute stmt ps
                   , stmtReset = stmtReset stmt
@@ -127,10 +129,10 @@ wrapSqlBackend' tp attrs conn_ = do
                   }
           }
 
-  let conn' =
+      conn' =
         conn
           { connHooks = hooks
-          , connBegin = \f mIso -> do
+          , connBegin = withFrozenCallStack $ \f mIso -> do
               let statement =
                     "begin transaction" <> case mIso of
                       Nothing -> mempty
@@ -138,24 +140,24 @@ wrapSqlBackend' tp attrs conn_ = do
                       Just ReadCommitted -> " isolation level read committed"
                       Just RepeatableRead -> " isolation level repeatable read"
                       Just Serializable -> " isolation level serializable"
-              let attrs' = ("db.statement", toAttribute statement) : attrs
+              let attrs' = H.insert "db.statement" (toAttribute statement) attrs
               inSpan' t statement (defaultSpanArguments {kind = Client, attributes = attrs'}) $ \s -> do
                 annotateBasics s conn
                 connBegin conn f mIso
-          , connCommit = \f -> do
-              inSpan' t "commit" (defaultSpanArguments {kind = Client, attributes = ("db.statement", toAttribute ("commit" :: Text)) : attrs}) $ \s -> do
+          , connCommit = withFrozenCallStack $ \f -> do
+              inSpan' t "commit" (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute ("commit" :: Text)) attrs}) $ \s -> do
                 annotateBasics s conn
                 connCommit conn f
-          , connRollback = \f -> do
-              inSpan' t "rollback" (defaultSpanArguments {kind = Client, attributes = ("db.statement", toAttribute ("rollback" :: Text)) : attrs}) $ \s -> do
+          , connRollback = withFrozenCallStack $ \f -> do
+              inSpan' t "rollback" (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute ("rollback" :: Text)) attrs}) $ \s -> do
                 annotateBasics s conn
                 connRollback conn f
-          , connClose = do
+          , connClose = withFrozenCallStack $ do
               inSpan' t "close connection" (defaultSpanArguments {kind = Client, attributes = attrs}) $ \s -> do
                 annotateBasics s conn
                 connClose conn
           }
-  pure $ insertOriginalConnection conn' conn
+   in insertOriginalConnection conn' conn
 
 
 annotateBasics :: (MonadIO m) => Span -> SqlBackend -> m ()

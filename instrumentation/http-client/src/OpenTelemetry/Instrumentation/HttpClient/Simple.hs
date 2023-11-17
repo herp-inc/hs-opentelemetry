@@ -2,13 +2,21 @@
 
 module OpenTelemetry.Instrumentation.HttpClient.Simple (
   httpBS,
+  httpBS',
   httpLBS,
+  httpLBS',
   httpNoBody,
+  httpNoBody',
   httpJSON,
+  httpJSON',
   httpJSONEither,
+  httpJSONEither',
   httpSink,
+  httpSink',
   httpSource,
+  httpSource',
   withResponse,
+  withResponse',
   httpClientInstrumentationConfig,
   HttpClientInstrumentationConfig (..),
   module X,
@@ -33,88 +41,112 @@ spanArgs = defaultSpanArguments {kind = Client}
 
 
 httpBS :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response B.ByteString)
-httpBS httpConf req = do
-  t <- httpTracerProvider
-  inSpan' t "httpBS" spanArgs $ \_s -> do
+httpBS httpConf req = httpTracerProvider >>= \tracer -> httpBS' tracer httpConf req
+
+
+httpBS' :: (MonadUnliftIO m) => Tracer -> HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response B.ByteString)
+httpBS' tracer httpConf req = do
+  inSpan' tracer "httpBS" spanArgs $ \_s -> do
     ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
+    req' <- instrumentRequest tracer httpConf ctxt req
     resp <- Simple.httpBS req'
-    _ <- instrumentResponse httpConf ctxt resp
+    _ <- instrumentResponse tracer httpConf ctxt resp
     pure resp
 
 
 httpLBS :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response L.ByteString)
-httpLBS httpConf req = do
-  t <- httpTracerProvider
-  inSpan' t "httpLBS" spanArgs $ \_s -> do
+httpLBS httpConf req = httpTracerProvider >>= \tracer -> httpLBS' tracer httpConf req
+
+
+httpLBS' :: (MonadUnliftIO m) => Tracer -> HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response L.ByteString)
+httpLBS' tracer httpConf req = do
+  inSpan' tracer "httpLBS" spanArgs $ \_s -> do
     ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
+    req' <- instrumentRequest tracer httpConf ctxt req
     resp <- Simple.httpLBS req'
-    _ <- instrumentResponse httpConf ctxt resp
+    _ <- instrumentResponse tracer httpConf ctxt resp
     pure resp
 
 
 httpNoBody :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response ())
-httpNoBody httpConf req = do
-  t <- httpTracerProvider
-  inSpan' t "httpNoBody" spanArgs $ \_s -> do
+httpNoBody httpConf req = httpTracerProvider >>= \tracer -> httpNoBody' tracer httpConf req
+
+
+httpNoBody' :: (MonadUnliftIO m) => Tracer -> HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response ())
+httpNoBody' tracer httpConf req = do
+  inSpan' tracer "httpNoBody" spanArgs $ \_s -> do
     ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
+    req' <- instrumentRequest tracer httpConf ctxt req
     resp <- Simple.httpNoBody req'
-    _ <- instrumentResponse httpConf ctxt resp
+    _ <- instrumentResponse tracer httpConf ctxt resp
     pure resp
 
 
 httpJSON :: (MonadUnliftIO m, FromJSON a) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response a)
-httpJSON httpConf req = do
-  t <- httpTracerProvider
-  inSpan' t "httpJSON" spanArgs $ \_s -> do
+httpJSON httpConf req = httpTracerProvider >>= \tracer -> httpJSON' tracer httpConf req
+
+
+httpJSON' :: (MonadUnliftIO m, FromJSON a) => Tracer -> HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response a)
+httpJSON' tracer httpConf req = do
+  inSpan' tracer "httpJSON" spanArgs $ \_s -> do
     ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
+    req' <- instrumentRequest tracer httpConf ctxt req
     resp <- Simple.httpJSON req'
-    _ <- instrumentResponse httpConf ctxt resp
+    _ <- instrumentResponse tracer httpConf ctxt resp
     pure resp
 
 
 httpJSONEither :: (FromJSON a, MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response (Either Simple.JSONException a))
-httpJSONEither httpConf req = do
-  t <- httpTracerProvider
-  inSpan' t "httpJSONEither" spanArgs $ \_s -> do
+httpJSONEither httpConf req = httpTracerProvider >>= \tracer -> httpJSONEither' tracer httpConf req
+
+
+httpJSONEither' :: (FromJSON a, MonadUnliftIO m) => Tracer -> HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response (Either Simple.JSONException a))
+httpJSONEither' tracer httpConf req = do
+  inSpan' tracer "httpJSONEither" spanArgs $ \_s -> do
     ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
+    req' <- instrumentRequest tracer httpConf ctxt req
     resp <- Simple.httpJSONEither req'
-    _ <- instrumentResponse httpConf ctxt resp
+    _ <- instrumentResponse tracer httpConf ctxt resp
     pure resp
 
 
 httpSink :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response () -> ConduitM B.ByteString Void m a) -> m a
-httpSink httpConf req f = do
-  t <- httpTracerProvider
-  inSpan' t "httpSink" spanArgs $ \_s -> do
+httpSink httpConf req f = httpTracerProvider >>= \tracer -> httpSink' tracer httpConf req f
+
+
+httpSink' :: (MonadUnliftIO m) => Tracer -> HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response () -> ConduitM B.ByteString Void m a) -> m a
+httpSink' tracer httpConf req f = do
+  inSpan' tracer "httpSink" spanArgs $ \_s -> do
     ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
+    req' <- instrumentRequest tracer httpConf ctxt req
     Simple.httpSink req' $ \resp -> do
-      _ <- instrumentResponse httpConf ctxt resp
+      _ <- instrumentResponse tracer httpConf ctxt resp
       f resp
 
 
 httpSource :: (MonadUnliftIO m, MonadResource m) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> ConduitM i o m r) -> ConduitM i o m r
-httpSource httpConf req f = do
-  t <- httpTracerProvider
-  Conduit.inSpan t "httpSource" spanArgs $ \_s -> do
+httpSource httpConf req f = httpTracerProvider >>= \tracer -> httpSource' tracer httpConf req f
+
+
+httpSource' :: (MonadUnliftIO m, MonadResource m) => Tracer -> HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> ConduitM i o m r) -> ConduitM i o m r
+httpSource' tracer httpConf req f = do
+  Conduit.inSpan tracer "httpSource" spanArgs $ \_s -> do
     ctxt <- lift getContext
-    req' <- instrumentRequest httpConf ctxt req
+    req' <- instrumentRequest tracer httpConf ctxt req
     Simple.httpSource req' $ \resp -> do
-      _ <- instrumentResponse httpConf ctxt resp
+      _ <- instrumentResponse tracer httpConf ctxt resp
       f resp
 
 
 withResponse :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> m a) -> m a
-withResponse httpConf req f = do
-  t <- httpTracerProvider
-  inSpan' t "withResponse" spanArgs $ \_s -> do
+withResponse httpConf req f = httpTracerProvider >>= \tracer -> withResponse' tracer httpConf req f
+
+
+withResponse' :: (MonadUnliftIO m) => Tracer -> HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> m a) -> m a
+withResponse' tracer httpConf req f = do
+  inSpan' tracer "withResponse" spanArgs $ \_s -> do
     ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
+    req' <- instrumentRequest tracer httpConf ctxt req
     Simple.withResponse req' $ \resp -> do
-      _ <- instrumentResponse httpConf ctxt resp
+      _ <- instrumentResponse tracer httpConf ctxt resp
       f resp
