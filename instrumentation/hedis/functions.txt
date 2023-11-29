@@ -1,4 +1,4 @@
--- functions whose type is form of `RedisCtx m f => … -> m (f _)` in `Database.Redis`
+-- functions whose type is form of `RedisCtx m f => _ -> m (f _)` in `Database.Redis`
 append :: RedisCtx m f => ByteString -> ByteString -> m (f Integer)
 auth :: RedisCtx m f => ByteString -> m (f Status)
 bgrewriteaof :: RedisCtx m f => m (f Status)
