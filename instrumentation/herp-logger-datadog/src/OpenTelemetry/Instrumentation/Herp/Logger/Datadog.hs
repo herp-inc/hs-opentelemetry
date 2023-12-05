@@ -36,7 +36,7 @@ module OpenTelemetry.Instrumentation.Herp.Logger.Datadog (
   logEmergM,
   logIO,
   Orig.urgentLog,
-  Orig.flush,
+  flush,
 
   -- * Payload
   Orig.Payload,
@@ -53,9 +53,9 @@ module OpenTelemetry.Instrumentation.Herp.Logger.Datadog (
 ) where
 
 import Control.Applicative (Alternative ((<|>)))
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO(liftIO))
 import qualified Control.Monad.Logger as ML
-import Control.Monad.Reader.Class (MonadReader (ask))
+import Control.Monad.Reader.Class (MonadReader (ask),asks)
 import qualified Data.Aeson.KeyMap as Aeson
 import qualified Data.Aeson.Types as Aeson
 import Data.Maybe (maybeToList)
@@ -159,6 +159,9 @@ logAlertM = logOtherM Orig.Alert
 logEmergM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
 logEmergM = logOtherM Orig.Emergency
 
+
+flush :: (MonadReader r m, HasLogger r, MonadIO m) => m ()
+flush = asks toLogger >>= liftIO . Orig.loggerFlush . original
 
 runLoggingT :: Logger -> ML.LoggingT m a -> m a
 runLoggingT logger (ML.LoggingT run) = run $ toLoggerIO logger
