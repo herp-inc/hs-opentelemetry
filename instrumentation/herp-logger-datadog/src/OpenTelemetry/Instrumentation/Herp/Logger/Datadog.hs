@@ -6,8 +6,6 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {- | This is herp-logger with connections of OpenTelemetry Traces and Logs.
 
@@ -109,11 +107,6 @@ instance HasLogger Logger where
 
 instance Otel.HasTracer Logger where
   tracerL f Logger {tracer, original} = (\tracer -> Logger {original, tracer}) <$> f tracer
-
-
--- This requires UndecidableInstances, and is orphan.
-instance {-# OVERLAPPABLE #-} HasLogger a => Orig.HasLogger a where
-  toLogger = original . toLogger
 
 
 logIO :: MonadIO m => Logger -> Orig.Payload -> m ()
