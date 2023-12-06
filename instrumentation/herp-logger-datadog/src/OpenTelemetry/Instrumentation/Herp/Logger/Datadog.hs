@@ -18,6 +18,7 @@ module OpenTelemetry.Instrumentation.Herp.Logger.Datadog (
   (Orig..=),
   Logger (..),
   HasLogger (..),
+  ToLogger (..),
   Orig.LogLevel (..),
   Orig.LoggerConfig (..),
   newLogger,
@@ -105,8 +106,20 @@ instance HasLogger Logger where
   toLogger = id
 
 
+instance Orig.HasLogger Logger where
+  toLogger = original . toLogger
+
+
 instance Otel.HasTracer Logger where
   tracerL f Logger {tracer, original} = (\tracer -> Logger {original, tracer}) <$> f tracer
+
+
+-- | This wrapper is intended to be used with /deriving via/.
+newtype ToLogger a = ToLogger {getToLogger :: a}
+
+
+instance HasLogger a => Orig.HasLogger (ToLogger a) where
+  toLogger = original . toLogger . getToLogger
 
 
 logIO :: MonadIO m => Logger -> Orig.Payload -> m ()
