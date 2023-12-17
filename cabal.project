@@ -3,6 +3,7 @@ packages:
   , sdk
   , otlp
   , examples/grpc-echo
+  , examples/hdbc-mysql
   , examples/http-server
   , examples/yesod-minimal
   , examples/yesod-subsite
@@ -12,6 +13,8 @@ packages:
   , instrumentation/cloudflare
   , instrumentation/conduit
   , instrumentation/grpc-haskell
+  , instrumentation/hdbc
+  , instrumentation/hdbc-mysql
   , instrumentation/hedis
   , instrumentation/herp-logger-datadog
   , instrumentation/hspec
@@ -50,6 +53,12 @@ source-repository-package
     location: https://github.com/awakesecurity/proto3-wire.git
     tag: ee6ca644eef86cc5f31da85fb48e10b20ab0e1a1
     -- HEAD of master at 2023-08-10
+
+source-repository-package
+    type: git
+    location: https://github.com/ryantm/hdbc-mysql
+    tag: 80f8077b29ee27bce4141b385a8b28f42cbbbe46
+    -- master at 2023-12-19
 
 source-repository-package
     type: git
