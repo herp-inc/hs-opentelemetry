@@ -16,6 +16,8 @@ packages:
 - instrumentation/conduit
 - instrumentation/cloudflare
 # - instrumentation/grpc-haskell # able to be built with cabal
+- instrumentation/hdbc
+- instrumentation/hdbc-mysql
 - instrumentation/hedis
 # - instrumentation/herp-logger-datadog
 - instrumentation/hspec
@@ -25,6 +27,7 @@ packages:
 - instrumentation/postgresql-simple
 - instrumentation/yesod
 - instrumentation/wai
+- examples/hdbc-mysql
 - examples/http-server
 - examples/yesod-minimal
 - examples/yesod-subsite
@@ -38,6 +41,8 @@ extra-deps:
 - hspec-expectations-0.8.4@sha256:4237f094a7931202ff57ac6475542b0b314b50a7024550e2b6eb87cfb0d4ff93,1702
 - thread-utils-context-0.2.0.0@sha256:7863e568c7a43cd21616342d20484d4c962aaa9710619f104c6fb7ee32273940,1883
 - thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
+- github: ryantm/hdbc-mysql
+  commit: 80f8077b29ee27bce4141b385a8b28f42cbbbe46 # HEAD of master at 2023-12-19
 
 nix:
   enable: true

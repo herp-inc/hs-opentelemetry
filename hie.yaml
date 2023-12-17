@@ -35,6 +35,9 @@ cradle:
             - path: "examples/grpc-echo/gen"
               component: "lib:grpc-echo-example"
 
+            - path: "examples/hdbc-mysql/main.hs"
+              component: "hdbc-mysql-example:exe:hdbc-mysql-example"
+
             - path: "examples/yesod-minimal/src"
               component: "lib:yesod-minimal"
 
@@ -85,6 +88,12 @@ cradle:
 
             - path: "instrumentation/grpc-haskell/src"
               component: "lib:hs-opentelemetry-instrumentation-grpc-haskell"
+
+            - path: "instrumentation/hdbc/src"
+              component: "lib:hs-opentelemetry-instrumentation-HDBC"
+
+            - path: "instrumentation/hdbc-mysql/src"
+              component: "lib:hs-opentelemetry-instrumentation-HDBC-MySQL"
 
             - path: "instrumentation/hedis/src"
               component: "lib:hs-opentelemetry-instrumentation-hedis"

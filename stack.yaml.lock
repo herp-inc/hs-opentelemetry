@@ -46,6 +46,17 @@ packages:
       sha256: 8c2c2e2e22c20bf3696ee6f30b50b3a9eeae187a22beb536441eefb0a3f9c549
   original:
     hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
+- completed:
+    size: 29580
+    url: https://github.com/ryantm/hdbc-mysql/archive/80f8077b29ee27bce4141b385a8b28f42cbbbe46.tar.gz
+    name: HDBC-mysql
+    version: 1.0.0.0
+    sha256: ca7ad707203e14368d09500bcb260902e23b445c1344d12f5911e9a9ea6c9043
+    pantry-tree:
+      size: 1139
+      sha256: fd3e0407e96f5610fee63c076428a03c0caf361f066099444f8b703da421bcb1
+  original:
+    url: https://github.com/ryantm/hdbc-mysql/archive/80f8077b29ee27bce4141b385a8b28f42cbbbe46.tar.gz
 snapshots:
 - completed:
     size: 617368
