@@ -56,7 +56,6 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   hs-source-dirs: test/spec
-                  old-src
   other-modules: OpenTelemetry.Vendor.DatadogSpec
   build-depends: hs-opentelemetry-vendor-datadog,
                  hs-opentelemetry-api,

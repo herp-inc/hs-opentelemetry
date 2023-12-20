@@ -18,7 +18,7 @@ import GHC.Stack (withFrozenCallStack)
 import Network.HTTP.Types
 import Network.Socket
 import Network.Wai
-import OpenTelemetry.Attributes (lookupAttribute)
+import OpenTelemetry.Attribute (lookupAttribute)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator

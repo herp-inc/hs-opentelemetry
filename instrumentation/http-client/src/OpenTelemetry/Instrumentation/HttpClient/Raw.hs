@@ -8,13 +8,14 @@ import Control.Monad (forM_, when)
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as B
 import Data.CaseInsensitive (foldedCase)
-import qualified Data.HashMap.Strict as H
 import Data.Maybe (mapMaybe)
 import qualified Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Network.HTTP.Client
 import Network.HTTP.Types
+import qualified OpenTelemetry.Attribute as A
+import qualified OpenTelemetry.Attribute.Attributes as A
 import OpenTelemetry.Context (Context, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator
@@ -93,9 +94,9 @@ instrumentRequest tracer conf ctxt req = do
         )
       ]
     addAttributes s
-      $ H.fromList
+      $ A.fromList
       $ mapMaybe
-        (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
+        (\h -> (\v -> (A.Key $ "http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
       $ requestHeadersToRecord conf
 
   hdrs <- inject (getTracerProviderPropagators $ getTracerTracerProvider tracer) ctxt $ requestHeaders req
@@ -132,7 +133,7 @@ instrumentResponse tracer conf ctxt resp = do
       -- , ("net.peer.port")
       ]
     addAttributes s
-      $ H.fromList
+      $ A.fromList
       $ mapMaybe
-        (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
+        (\h -> (\v -> (A.Key $ "http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
       $ responseHeadersToRecord conf

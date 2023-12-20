@@ -74,6 +74,7 @@ import Database.PostgreSQL.Simple.Internal (
   Connection (Connection, connectionHandle),
  )
 import GHC.Stack
+import qualified OpenTelemetry.Attribute.Attributes as A
 import OpenTelemetry.Resource ((.=), (.=?))
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad
@@ -82,7 +83,7 @@ import UnliftIO
 
 
 -- | Get attributes that can be attached to a span denoting some database action
-staticConnectionAttributes :: MonadIO m => Connection -> m (H.HashMap T.Text Attribute)
+staticConnectionAttributes :: MonadIO m => Connection -> m Attributes
 staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
   (mDb, mUser, mHost, mPort) <- withMVar connectionHandle $ \pqConn -> do
     (,,,)
@@ -91,7 +92,7 @@ staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
       <*> LibPQ.host pqConn
       <*> LibPQ.port pqConn
   pure $
-    H.fromList $
+    A.fromList $
       catMaybes
         [ "db.system" .= toAttribute ("postgresql" :: T.Text)
         , "db.user" .=? (TE.decodeUtf8 <$> mUser)

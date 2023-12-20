@@ -108,9 +108,12 @@ module OpenTelemetry.Trace.Core (
   OpenTelemetry.Trace.Core.addAttributes,
   spanGetAttributes,
   A.Attribute (..),
-  A.ToAttribute (..),
+  A.IsAttribute (..),
   A.PrimitiveAttribute (..),
-  A.ToPrimitiveAttribute (..),
+  A.IsPrimitiveAttribute (..),
+  A.Key (..),
+  A.Attributes,
+  A.AttributeCollection,
 
   -- ** Recording error information
   recordException,
@@ -148,7 +151,6 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Data.Coerce
 import Data.Default.Class (Default (def))
-import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -158,7 +160,10 @@ import qualified Data.Vector as V
 import Data.Word (Word64)
 import GHC.Stack
 import Network.HTTP.Types
-import qualified OpenTelemetry.Attributes as A
+import qualified OpenTelemetry.Attribute.Attribute as A
+import qualified OpenTelemetry.Attribute.AttributeCollection as A
+import qualified OpenTelemetry.Attribute.Attributes as A
+import qualified OpenTelemetry.Attribute.Key as A
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
@@ -203,7 +208,7 @@ createSpan ::
   -- | The created span.
   m Span
 createSpan t c n args@SpanArguments {attributes} =
-  createSpanWithoutCallStack t c n args {attributes = H.union attributes $ makeCodeAttributes callStack}
+  createSpanWithoutCallStack t c n args {attributes = A.union attributes $ makeCodeAttributes callStack}
 
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
@@ -272,7 +277,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                         A.addAttributes
                           (limitBy t spanAttributeCountLimit)
                           A.emptyAttributes
-                          (H.unions [additionalInfo, attrs, attributes])
+                          (A.unions [additionalInfo, attrs, attributes])
                     , spanLinks =
                         let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                          in frozenBoundedCollection limitedLinks $ fmap freezeLink links
@@ -364,12 +369,12 @@ inSpan'' t cs n args f =
     (\(_, s) -> f s)
 
 
-makeCodeAttributes :: CallStack -> H.HashMap Text A.Attribute
+makeCodeAttributes :: CallStack -> A.Attributes
 makeCodeAttributes callStack' =
   case getCallStack callStack' of
-    [] -> H.empty
+    [] -> A.empty
     (_, loc) : rest ->
-      H.union
+      A.union
         [ ("code.namespace", A.toAttribute $ T.pack $ srcLocModule loc)
         , ("code.filepath", A.toAttribute $ T.pack $ srcLocFile loc)
         , ("code.lineno", A.toAttribute $ srcLocStartLine loc)
@@ -414,11 +419,11 @@ Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetr
 @since 0.0.1.0
 -}
 addAttribute ::
-  (MonadIO m, A.ToAttribute a) =>
+  (MonadIO m, A.IsAttribute a) =>
   -- | Span to add the attribute to
   Span ->
   -- | Attribute name
-  Text ->
+  A.Key a ->
   -- | Attribute value
   a ->
   m ()
@@ -441,7 +446,7 @@ addAttribute (Dropped _) _ _ = pure ()
 
  @since 0.0.1.0
 -}
-addAttributes :: MonadIO m => Span -> H.HashMap Text A.Attribute -> m ()
+addAttributes :: MonadIO m => Span -> A.Attributes -> m ()
 addAttributes (Span s) attrs = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
@@ -553,7 +558,7 @@ endSpan (Dropped _) _ = pure ()
 
  @since 0.0.1.0
 -}
-recordException :: (MonadIO m, Exception e) => Span -> H.HashMap Text A.Attribute -> Maybe Timestamp -> e -> m ()
+recordException :: (MonadIO m, Exception e) => Span -> A.Attributes -> Maybe Timestamp -> e -> m ()
 recordException s attrs ts e = liftIO $ do
   cs <- whoCreated e
   let message = T.pack $ show e
@@ -561,7 +566,7 @@ recordException s attrs ts e = liftIO $ do
     NewEvent
       { newEventName = "exception"
       , newEventAttributes =
-          H.union
+          A.union
             attrs
             [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
             , ("exception.message", A.toAttribute message)
@@ -610,7 +615,7 @@ wrapSpanContext = FrozenSpan
  using it to copy / otherwise use the data to further enrich
  instrumentation.
 -}
-spanGetAttributes :: (MonadIO m) => Span -> m A.Attributes
+spanGetAttributes :: (MonadIO m) => Span -> m A.AttributeCollection
 spanGetAttributes = \case
   Span ref -> do
     s <- liftIO $ readIORef ref

@@ -30,7 +30,6 @@ module OpenTelemetry.Instrumentation.Yesod (
 ) where
 
 import Control.Monad.IO.Class (MonadIO)
-import qualified Data.HashMap.Strict as H
 import Data.List (intercalate)
 import Data.Map (Map)
 import qualified Data.Map as M
@@ -39,7 +38,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Vault.Lazy as V
-import GHC.Stack (HasCallStack)
+import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Language.Haskell.TH (
   Clause,
   Dec,
@@ -60,24 +59,16 @@ import Language.Haskell.TH (
   varP,
   wildP,
  )
-
-
-#if MIN_VERSION_template_haskell(2, 17, 0)
-import Language.Haskell.TH (Quote (newName))
-#else
-import Language.Haskell.TH (newName)
-#endif
-import qualified Data.HashMap.Strict as H
-import GHC.Stack (withFrozenCallStack)
 import Lens.Micro (Lens', lens)
 import Network.Wai (Request (vault), requestHeaders)
+import qualified OpenTelemetry.Attribute.Attributes as A
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (getContext)
 import OpenTelemetry.Trace.Core (
+  IsAttribute (toAttribute),
   Span,
   SpanArguments (attributes, kind),
   SpanKind (Internal, Server),
-  ToAttribute (toAttribute),
   Tracer,
   TracerProvider,
   addAttributes,
@@ -120,6 +111,13 @@ import Yesod.Routes.TH.Types (
   ResourceTree (ResourceLeaf, ResourceParent),
   flatten,
  )
+
+
+#if MIN_VERSION_template_haskell(2, 17, 0)
+import Language.Haskell.TH (Quote (newName))
+#else
+import Language.Haskell.TH (newName)
+#endif
 
 
 handlerEnvL :: Lens' (HandlerData child site) (RunHandlerEnv child site)
@@ -332,7 +330,7 @@ openTelemetryYesodMiddleware rr (HandlerFor doResponse) =
     mspan <- Context.lookupSpan <$> getContext
     mr <- getCurrentRoute
     let sharedAttributes =
-          H.fromList $
+          A.fromList $
             catMaybes
               [ do
                   r <- mr

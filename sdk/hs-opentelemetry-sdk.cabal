@@ -41,7 +41,11 @@ library
   other-modules:
       Paths_hs_opentelemetry_sdk
   reexported-modules:
-      OpenTelemetry.Attributes
+      OpenTelemetry.Attribute
+    , OpenTelemetry.Attribute.Attribute
+    , OpenTelemetry.Attribute.Attributes
+    , OpenTelemetry.Attribute.AttributeCollection
+    , OpenTelemetry.Attribute.Key
     , OpenTelemetry.Baggage
     , OpenTelemetry.Context
     , OpenTelemetry.Context.ThreadLocal

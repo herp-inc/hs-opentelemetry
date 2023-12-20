@@ -14,7 +14,6 @@ import Control.Monad.IO.Class
 import Data.Bits
 import Data.Default.Class (Default (def))
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as H
 import Data.Hashable (Hashable)
 import Data.IORef (IORef, readIORef)
 import Data.String (IsString (..))
@@ -23,7 +22,8 @@ import Data.Vector (Vector)
 import Data.Word (Word8)
 import GHC.Generics
 import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
-import OpenTelemetry.Attributes
+import OpenTelemetry.Attribute.AttributeCollection
+import OpenTelemetry.Attribute.Attributes (Attributes)
 import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
 import OpenTelemetry.Logging.Core (Log)
@@ -182,7 +182,7 @@ This is not the case in scatter/gather and batch scenarios.
 data NewLink = NewLink
   { linkContext :: !SpanContext
   -- ^ @SpanContext@ of the @Span@ to link to.
-  , linkAttributes :: H.HashMap Text Attribute
+  , linkAttributes :: Attributes
   -- ^ Zero or more Attributes further describing the link.
   }
   deriving (Show)
@@ -212,7 +212,7 @@ This is not the case in scatter/gather and batch scenarios.
 data Link = Link
   { frozenLinkContext :: !SpanContext
   -- ^ @SpanContext@ of the @Span@ to link to.
-  , frozenLinkAttributes :: Attributes
+  , frozenLinkAttributes :: AttributeCollection
   -- ^ Zero or more Attributes further describing the link.
   }
   deriving (Show)
@@ -223,7 +223,7 @@ data SpanArguments = SpanArguments
   { kind :: SpanKind
   -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
   -- of the various values that may be specified.
-  , attributes :: H.HashMap Text Attribute
+  , attributes :: Attributes
   -- ^ An initial set of attributes that may be set on initial 'Span' creation.
   -- These attributes are provided to 'Processor's, so they may be useful in some
   -- scenarios where calling `addAttribute` or `addAttributes` is too late.
@@ -348,7 +348,7 @@ data ImmutableSpan = ImmutableSpan
   -- ^ A timestamp that corresponds to the start of the span
   , spanEnd :: Maybe Timestamp
   -- ^ A timestamp that corresponds to the end of the span, if the span has ended.
-  , spanAttributes :: Attributes
+  , spanAttributes :: AttributeCollection
   , spanLinks :: FrozenBoundedCollection Link
   -- ^ Zero or more links to related spans. Links can be useful for connecting causal relationships between things like web requests that enqueue asynchronous tasks to be processed.
   , spanEvents :: AppendOnlyBoundedCollection Event
@@ -480,7 +480,7 @@ newtype NonRecordingSpan = NonRecordingSpan SpanContext
 data NewEvent = NewEvent
   { newEventName :: Text
   -- ^ The name of an event. Ideally this should be a relatively unique, but low cardinality value.
-  , newEventAttributes :: H.HashMap Text Attribute
+  , newEventAttributes :: Attributes
   -- ^ Additional context or metadata related to the event, (stack traces, callsites, etc.).
   , newEventTimestamp :: Maybe Timestamp
   -- ^ The time that the event occurred.
@@ -496,7 +496,7 @@ data NewEvent = NewEvent
 data Event = Event
   { eventName :: Text
   -- ^ The name of an event. Ideally this should be a relatively unique, but low cardinality value.
-  , eventAttributes :: Attributes
+  , eventAttributes :: AttributeCollection
   -- ^ Additional context or metadata related to the event, (stack traces, callsites, etc.).
   , eventTimestamp :: Timestamp
   -- ^ The time that the event occurred.
@@ -531,7 +531,7 @@ data SamplingResult
 data Sampler = Sampler
   { getDescription :: Text
   -- ^ Returns the sampler name or short description with the configuration. This may be displayed on debug pages or in the logs.
-  , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, H.HashMap Text Attribute, TraceState)
+  , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, Attributes, TraceState)
   }
 
 

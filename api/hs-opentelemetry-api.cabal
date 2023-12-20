@@ -27,7 +27,11 @@ source-repository head
 
 library
   exposed-modules:
-      OpenTelemetry.Attributes
+      OpenTelemetry.Attribute
+      OpenTelemetry.Attribute.Attribute
+      OpenTelemetry.Attribute.AttributeCollection
+      OpenTelemetry.Attribute.Attributes
+      OpenTelemetry.Attribute.Key
       OpenTelemetry.Baggage
       OpenTelemetry.Common
       OpenTelemetry.Context
