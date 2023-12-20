@@ -363,7 +363,6 @@ import qualified Control.Exception.Safe as E
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Reader (MonadReader (), ReaderT (ReaderT, runReaderT))
 import Data.ByteString (ByteString)
-import qualified Data.HashMap.Strict as H
 import Data.IP (IP)
 import Data.String (IsString (fromString))
 import Data.Text (Text)
@@ -371,7 +370,7 @@ import qualified Database.Redis as Orig
 import GHC.Stack (HasCallStack)
 import OpenTelemetry.Instrumentation.Hedis.Internal.Action
 import OpenTelemetry.Instrumentation.Hedis.Internal.Wrapper (wrap0, wrap1, wrap2)
-import qualified OpenTelemetry.Trace.Core as Otel (Attribute, SpanArguments (attributes, kind), SpanKind (Client), Tracer, TracerProvider, defaultSpanArguments, getGlobalTracerProvider, inSpan, makeTracer, tracerOptions)
+import qualified OpenTelemetry.Trace.Core as Otel (Attribute, Attributes, Key, SpanArguments (attributes, kind), SpanKind (Client), Tracer, TracerProvider, defaultSpanArguments, getGlobalTracerProvider, inSpan, makeTracer, tracerOptions)
 import qualified OpenTelemetry.Trace.Monad as Otel (MonadTracer, TracerT (TracerT))
 import Text.Read (readMaybe)
 
@@ -554,11 +553,11 @@ inSpan tracer name info f = do
   Otel.inSpan tracer name args f
 
 
-makeAttributes :: Orig.ConnectInfo -> H.HashMap Text Otel.Attribute
+makeAttributes :: Orig.ConnectInfo -> Otel.Attributes
 makeAttributes info@Orig.ConnInfo {Orig.connectHost, Orig.connectPort} =
   let
     transportAttr :: Otel.Attribute
-    portAttr :: (Text, Otel.Attribute)
+    portAttr :: (Otel.Key Otel.Attribute, Otel.Attribute)
     (transportAttr, portAttr) =
       case connectPort of
         Orig.PortNumber n -> ("ip_tcp", ("net.peer.port", fromString $ show n))

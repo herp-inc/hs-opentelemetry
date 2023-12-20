@@ -5,13 +5,14 @@ module OpenTelemetry.Instrumentation.Cloudflare where
 
 import Control.Monad (forM_)
 import qualified Data.CaseInsensitive as CI
-import qualified Data.HashMap.Strict as H
 import qualified Data.List
 import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Network.Wai
-import OpenTelemetry.Attributes (PrimitiveAttribute (..), ToAttribute (..))
+import OpenTelemetry.Attribute (IsAttribute (..), PrimitiveAttribute (..))
+import qualified OpenTelemetry.Attribute as A
+import qualified OpenTelemetry.Attribute.Attributes as A
 import OpenTelemetry.Context
 import OpenTelemetry.Instrumentation.Wai (requestContext)
 import OpenTelemetry.Trace.Core (addAttributes)
@@ -23,13 +24,13 @@ cloudflareInstrumentationMiddleware app req sendResp = do
   forM_ mCtxt $ \ctxt -> do
     forM_ (lookupSpan ctxt) $ \span_ -> do
       addAttributes span_ $
-        H.unions $
+        A.unions $
           fmap
             ( \hn -> case Data.List.lookup hn $ requestHeaders req of
                 Nothing -> []
                 Just val ->
                   [
-                    ( "http.request.header." <> T.decodeUtf8 (CI.foldedCase hn)
+                    ( A.Key $ "http.request.header." <> T.decodeUtf8 (CI.foldedCase hn)
                     , toAttribute $ T.decodeUtf8 val
                     )
                   ]

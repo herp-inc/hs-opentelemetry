@@ -38,7 +38,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Data.Text
 import Data.Word (Word64)
-import OpenTelemetry.Attributes (toAttribute)
+import OpenTelemetry.Attribute (toAttribute)
 import OpenTelemetry.Context
 import OpenTelemetry.Internal.Trace.Types
 import OpenTelemetry.Trace.Id

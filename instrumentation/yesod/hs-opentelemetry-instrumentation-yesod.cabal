@@ -43,7 +43,6 @@ library
     , template-haskell
     , text
     , unliftio
-    , unordered-containers
     , vault
     , wai
     , yesod-core
@@ -68,7 +67,6 @@ test-suite hs-opentelemetry-instrumentation-yesod-test
     , template-haskell
     , text
     , unliftio
-    , unordered-containers
     , vault
     , wai
     , yesod-core

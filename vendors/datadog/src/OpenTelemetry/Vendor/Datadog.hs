@@ -45,6 +45,7 @@ import Data.Primitive (ByteArray (ByteArray))
 import Data.String (fromString)
 import Data.Text (Text)
 import Data.Word (Word64)
+import qualified OpenTelemetry.Attribute as Attribute
 import qualified OpenTelemetry.Internal.Trace.Id as Trace
 import OpenTelemetry.Resource (Resource, mkResource)
 import OpenTelemetry.Vendor.Datadog.Internal (indexByteArrayNbo)
@@ -59,15 +60,15 @@ convertOpenTelemetryTraceIdToDatadogTraceId :: Trace.TraceId -> Word64
 convertOpenTelemetryTraceIdToDatadogTraceId (Trace.TraceId (SBI.SBS a)) = indexByteArrayNbo (ByteArray a) 1
 
 
-envKey :: Text
+envKey :: Attribute.Key Text
 envKey = "dd.env"
 
 
-serviceKey :: Text
+serviceKey :: Attribute.Key Text
 serviceKey = "dd.service"
 
 
-versionKey :: Text
+versionKey :: Attribute.Key Text
 versionKey = "dd.version"
 
 
@@ -82,4 +83,4 @@ detectResource = do
   env <- (envKey,) <$> lookupEnv "DD_ENV"
   service <- (serviceKey,) <$> lookupEnv "DD_SERVICE"
   version <- (versionKey,) <$> lookupEnv "DD_VERSION"
-  pure $ mkResource $ (\(k, mv) -> (k,) . fromString <$> mv) <$> [env, service, version]
+  pure $ mkResource $ (\(Attribute.Key k, mv) -> (Attribute.Key k,) . fromString <$> mv) <$> [env, service, version]

@@ -31,7 +31,6 @@ dependencies:
 - template-haskell
 - vault
 - wai
-- unordered-containers
 
 library:
   ghc-options: -Wall

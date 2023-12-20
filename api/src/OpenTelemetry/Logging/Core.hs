@@ -6,7 +6,7 @@ module OpenTelemetry.Logging.Core where
 
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
-import OpenTelemetry.Attributes (Attribute)
+import OpenTelemetry.Attribute (Attribute)
 import OpenTelemetry.Common
 import OpenTelemetry.Resource (MaterializedResources)
 import OpenTelemetry.Trace.Id (SpanId, TraceId)

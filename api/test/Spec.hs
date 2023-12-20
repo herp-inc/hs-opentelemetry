@@ -8,9 +8,7 @@ import qualified Data.Bifunctor
 import Data.IORef
 import Data.Maybe (isJust)
 import qualified Data.Vector as V
-import OpenTelemetry.Attributes (lookupAttribute)
--- Specs
-
+import OpenTelemetry.Attribute
 import qualified OpenTelemetry.BaggageSpec as Baggage
 import OpenTelemetry.Context
 import OpenTelemetry.Trace.Core
@@ -20,6 +18,8 @@ import OpenTelemetry.Util
 import Test.Hspec
 import qualified VectorBuilder.Vector as Builder
 
+
+-- Specs
 
 newtype TestException = TestException String
   deriving (Show)
