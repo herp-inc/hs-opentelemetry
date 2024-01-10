@@ -31,7 +31,7 @@ module OpenTelemetry.Vendor.Datadog (
 
   --
 
-  -- | These are keys to lookup or insert 'OpenTelemetry.Attributes.Attribute's to 'OpenTelemetry.Attributes.Attributes' with.
+  -- | These are keys to lookup or insert 'OpenTelemetry.Attributes.Attribute's to 'OpenTelemetry.Attributes' with.
   envKey,
   serviceKey,
   versionKey,
@@ -45,7 +45,7 @@ import Data.Primitive (ByteArray (ByteArray))
 import Data.String (fromString)
 import Data.Text (Text)
 import Data.Word (Word64)
-import qualified OpenTelemetry.Attribute as Attribute
+import qualified OpenTelemetry.Attributes as Attribute
 import qualified OpenTelemetry.Internal.Trace.Id as Trace
 import OpenTelemetry.Resource (Resource, mkResource)
 import OpenTelemetry.Vendor.Datadog.Internal (indexByteArrayNbo)
@@ -83,4 +83,4 @@ detectResource = do
   env <- (envKey,) <$> lookupEnv "DD_ENV"
   service <- (serviceKey,) <$> lookupEnv "DD_SERVICE"
   version <- (versionKey,) <$> lookupEnv "DD_VERSION"
-  pure $ mkResource $ (\(Attribute.Key k, mv) -> (Attribute.Key k,) . fromString <$> mv) <$> [env, service, version]
+  pure $ mkResource $ (\(Attribute.Key k, mv) -> (k,) . fromString <$> mv) <$> [env, service, version]

@@ -17,7 +17,7 @@ import OpenTelemetry.Context (insertSpan, lookupSpan, removeSpan)
 import OpenTelemetry.Context.ThreadLocal (adjustContext)
 import qualified OpenTelemetry.Context.ThreadLocal as TraceCore.SpanContext
 import qualified OpenTelemetry.Trace as Trace
-import OpenTelemetry.Trace.Core (IsAttribute (..), endSpan, recordException, setStatus, whenSpanIsRecording)
+import OpenTelemetry.Trace.Core (ToAttribute (..), endSpan, recordException, setStatus, whenSpanIsRecording)
 import qualified OpenTelemetry.Trace.Core as TraceCore
 
 

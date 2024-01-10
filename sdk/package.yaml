@@ -49,11 +49,10 @@ library:
   ghc-options: -Wall
   source-dirs: src
   reexported-modules:
-    - OpenTelemetry.Attribute
-    - OpenTelemetry.Attribute.Attribute
-    - OpenTelemetry.Attribute.Attributes
-    - OpenTelemetry.Attribute.AttributeCollection
-    - OpenTelemetry.Attribute.Key
+    - OpenTelemetry.Attributes
+    - OpenTelemetry.Attributes.Attribute
+    - OpenTelemetry.Attributes.Key
+    - OpenTelemetry.Attributes.Map
     - OpenTelemetry.Baggage
     - OpenTelemetry.Context
     - OpenTelemetry.Context.ThreadLocal

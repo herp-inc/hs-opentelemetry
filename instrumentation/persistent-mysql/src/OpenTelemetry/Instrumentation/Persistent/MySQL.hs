@@ -32,16 +32,17 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLoggerIO)
 import Data.Foldable (Foldable (fold))
 import Data.Functor ((<&>))
+import qualified Data.HashMap.Strict as H
 import Data.IP (IP)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Last (Last, getLast))
 import Data.Pool (Pool)
 import Data.String (IsString (fromString))
+import Data.Text (Text)
 import Database.MySQL.Base (ConnectInfo (..))
 import qualified Database.MySQL.Base as MySQL
 import qualified Database.Persist.MySQL as Orig
 import Database.Persist.Sql
-import qualified OpenTelemetry.Attribute.Attributes as OtelAttr
 import qualified OpenTelemetry.Instrumentation.Persistent as Otel
 import qualified OpenTelemetry.Trace.Core as Otel
 import Text.Read (readMaybe)
@@ -55,7 +56,7 @@ createMySQLPool ::
   (MonadUnliftIO m, MonadLoggerIO m) =>
   Otel.TracerProvider ->
   -- | Additional attributes.
-  Otel.Attributes ->
+  H.HashMap Text Otel.Attribute ->
   -- | Connection information.
   MySQL.ConnectInfo ->
   -- | Number of connections to be kept open in the pool.
@@ -73,7 +74,7 @@ withMySQLPool ::
   (MonadLoggerIO m, MonadUnliftIO m) =>
   Otel.TracerProvider ->
   -- | Additional attributes.
-  Otel.Attributes ->
+  H.HashMap Text Otel.Attribute ->
   -- | Connection information.
   MySQL.ConnectInfo ->
   -- | Number of connections to be kept open in the pool.
@@ -92,7 +93,7 @@ About attributes, see https://opentelemetry.io/docs/reference/specification/trac
 openMySQLConn ::
   Otel.TracerProvider ->
   -- | Additional attributes.
-  Otel.Attributes ->
+  H.HashMap Text Otel.Attribute ->
   -- | Connection information.
   MySQL.ConnectInfo ->
   LogFunc ->
@@ -115,7 +116,7 @@ openMySQLConn tp attrs ci@MySQL.ConnectInfo {connectUser, connectPort, connectOp
               _ -> Last Nothing
     -- "net.sock.family" is unnecessary because it must be "inet" when "net.sock.peer.addr" or "net.sock.host.addr" is set.
     attrs' =
-      OtelAttr.union
+      H.union
         [ ("db.connection_string", fromString $ showsPrecConnectInfoMasked 0 ci "")
         , ("db.user", fromString connectUser)
         , ("net.peer.port", portAttr)
@@ -136,7 +137,7 @@ withMySQLConn ::
   (MonadUnliftIO m, MonadLoggerIO m) =>
   Otel.TracerProvider ->
   -- | Additional attributes.
-  Otel.Attributes ->
+  H.HashMap Text Otel.Attribute ->
   -- | Connection information.
   MySQL.ConnectInfo ->
   -- | Action to be executed that uses the connection.

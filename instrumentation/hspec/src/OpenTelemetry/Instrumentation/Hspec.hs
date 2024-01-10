@@ -13,7 +13,7 @@ import Control.Monad.Reader
 import qualified Data.List as List
 import Data.Text (Text)
 import qualified Data.Text as T
-import OpenTelemetry.Attribute (Attributes)
+import OpenTelemetry.Attributes (Attributes)
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, attachContext, getContext)
 import OpenTelemetry.Trace.Core

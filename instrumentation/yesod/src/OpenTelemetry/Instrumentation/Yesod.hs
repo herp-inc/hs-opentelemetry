@@ -30,6 +30,7 @@ module OpenTelemetry.Instrumentation.Yesod (
 ) where
 
 import Control.Monad.IO.Class (MonadIO)
+import qualified Data.HashMap.Strict as H
 import Data.List (intercalate)
 import Data.Map (Map)
 import qualified Data.Map as M
@@ -61,14 +62,13 @@ import Language.Haskell.TH (
  )
 import Lens.Micro (Lens', lens)
 import Network.Wai (Request (vault), requestHeaders)
-import qualified OpenTelemetry.Attribute.Attributes as A
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (getContext)
 import OpenTelemetry.Trace.Core (
-  IsAttribute (toAttribute),
   Span,
   SpanArguments (attributes, kind),
   SpanKind (Internal, Server),
+  ToAttribute (toAttribute),
   Tracer,
   TracerProvider,
   addAttributes,
@@ -330,7 +330,7 @@ openTelemetryYesodMiddleware rr (HandlerFor doResponse) =
     mspan <- Context.lookupSpan <$> getContext
     mr <- getCurrentRoute
     let sharedAttributes =
-          A.fromList $
+          H.fromList $
             catMaybes
               [ do
                   r <- mr

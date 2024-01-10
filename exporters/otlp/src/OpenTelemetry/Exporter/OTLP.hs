@@ -58,6 +58,7 @@ import qualified Data.HashMap.Strict as H
 import Data.Maybe
 import Data.ProtoLens.Encoding
 import Data.ProtoLens.Message
+import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -67,10 +68,7 @@ import Network.HTTP.Client
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
-import OpenTelemetry.Attribute
-import qualified OpenTelemetry.Attribute.AttributeCollection as A
-import qualified OpenTelemetry.Attribute.Attributes as A
-import qualified OpenTelemetry.Attribute.Key as A
+import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Exporter
 import OpenTelemetry.Resource
@@ -300,20 +298,20 @@ otlpExporter conf = do
                 else pure Success
 
 
-attributesToProto :: AttributeCollection -> Vector KeyValue
+attributesToProto :: Attributes -> Vector KeyValue
 attributesToProto =
   V.fromList
     . fmap attributeToKeyValue
-    . A.toList
-    . A.attributes
+    . H.toList
+    . getAttributes
   where
     primAttributeToAnyValue = \case
       TextAttribute t -> defMessage & stringValue .~ t
       BoolAttribute b -> defMessage & boolValue .~ b
       DoubleAttribute d -> defMessage & doubleValue .~ d
       IntAttribute i -> defMessage & intValue .~ i
-    attributeToKeyValue :: (Key Attribute, Attribute) -> KeyValue
-    attributeToKeyValue (A.Key k, v) =
+    attributeToKeyValue :: (Text, Attribute) -> KeyValue
+    attributeToKeyValue (k, v) =
       defMessage
         & key .~ k
         & value
@@ -395,7 +393,7 @@ makeSpan completedSpan = do
       & startTimeUnixNano .~ startTime
       & endTimeUnixNano .~ maybe startTime timestampNanoseconds (OT.spanEnd completedSpan)
       & vec'attributes .~ attributesToProto (OT.spanAttributes completedSpan)
-      & droppedAttributesCount .~ fromIntegral (A.count $ OT.spanAttributes completedSpan)
+      & droppedAttributesCount .~ fromIntegral (getCount $ OT.spanAttributes completedSpan)
       & vec'events .~ fmap makeEvent (appendOnlyBoundedCollectionValues $ OT.spanEvents completedSpan)
       & droppedEventsCount .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.spanEvents completedSpan))
       & vec'links .~ fmap makeLink (frozenBoundedCollectionValues $ OT.spanLinks completedSpan)
@@ -422,7 +420,7 @@ makeEvent e =
     & timeUnixNano .~ timestampNanoseconds (OT.eventTimestamp e)
     & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.eventName e
     & vec'attributes .~ attributesToProto (OT.eventAttributes e)
-    & droppedAttributesCount .~ fromIntegral (A.count $ OT.eventAttributes e)
+    & droppedAttributesCount .~ fromIntegral (getCount $ OT.eventAttributes e)
 
 
 makeLink :: OT.Link -> Span'Link
@@ -431,4 +429,4 @@ makeLink l =
     & traceId .~ traceIdBytes (OT.traceId $ OT.frozenLinkContext l)
     & spanId .~ spanIdBytes (OT.spanId $ OT.frozenLinkContext l)
     & vec'attributes .~ attributesToProto (OT.frozenLinkAttributes l)
-    & droppedAttributesCount .~ fromIntegral (A.count $ OT.frozenLinkAttributes l)
+    & droppedAttributesCount .~ fromIntegral (getCount $ OT.frozenLinkAttributes l)
