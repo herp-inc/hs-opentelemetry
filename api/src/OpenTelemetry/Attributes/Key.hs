@@ -2,7 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 
 {- |
-Module      :  OpenTelemetry.AttributeCollection
+Module      :  OpenTelemetry.Attributes.Key
 Copyright   :  (c) Kazuki Okamoto (岡本和樹), 2023
 License     :  BSD-3
 Description :  Key-value pair metadata used in 'OpenTelemetry.Trace.Span's, 'OpenTelemetry.Trace.Link's, and 'OpenTelemetry.Trace.Event's
@@ -10,7 +10,7 @@ Maintainer  :  Kazuki Okamoto (岡本和樹)
 Stability   :  experimental
 Portability :  non-portable (GHC extensions)
 -}
-module OpenTelemetry.Attribute.Key (
+module OpenTelemetry.Attributes.Key (
   Key (..),
   forget,
 
@@ -269,7 +269,7 @@ import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
-import OpenTelemetry.Attribute.Attribute (Attribute)
+import OpenTelemetry.Attributes.Attribute (Attribute)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

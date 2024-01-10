@@ -150,8 +150,10 @@ module OpenTelemetry.Trace (
   createSpanWithoutCallStack,
   endSpan,
   spanGetAttributes,
-  IsAttribute (..),
-  IsPrimitiveAttribute (..),
+  ToAttribute (..),
+  FromAttribute (..),
+  ToPrimitiveAttribute (..),
+  FromPrimitiveAttribute (..),
   Attribute (..),
   PrimitiveAttribute (..),
   Link,
@@ -168,7 +170,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Network.HTTP.Types.Header
-import OpenTelemetry.Attribute (AttributeLimits (..), defaultAttributeLimits)
+import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context (Context)
@@ -483,7 +485,7 @@ detectExporters = do
 -- -- detectMetricsExporterSelection :: _
 -- -- TODO other metrics stuff
 
-detectResourceAttributes :: IO [(Key Attribute, Attribute)]
+detectResourceAttributes :: IO [(T.Text, Attribute)]
 detectResourceAttributes = do
   mEnv <- lookupEnv "OTEL_RESOURCE_ATTRIBUTES"
   case mEnv of
@@ -495,7 +497,7 @@ detectResourceAttributes = do
         pure []
       Right ok ->
         pure $
-          map (\(k, v) -> (Key $ decodeUtf8 $ Baggage.tokenValue k, toAttribute $ Baggage.value v)) $
+          map (\(k, v) -> (decodeUtf8 $ Baggage.tokenValue k, toAttribute $ Baggage.value v)) $
             H.toList $
               Baggage.values ok
 

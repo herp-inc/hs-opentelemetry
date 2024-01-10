@@ -24,7 +24,9 @@ library
                  persistent,
                  persistent-mysql,
                  resource-pool,
-                 unliftio-core
+                 text,
+                 unliftio-core,
+                 unordered-containers
   ghc-options: -Wcompat
                -Wno-name-shadowing
   if impl(ghc >= 6.4)

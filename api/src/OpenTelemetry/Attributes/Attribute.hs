@@ -11,7 +11,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
-Module      :  OpenTelemetry.Attribute
+Module      :  OpenTelemetry.Attributes.Attribute
 Copyright   :  (c) Ian Duncan, 2021
 License     :  BSD-3
 Description :  Key-value pair metadata used in 'OpenTelemetry.Trace.Span's, 'OpenTelemetry.Trace.Link's, and 'OpenTelemetry.Trace.Event's
@@ -19,11 +19,13 @@ Maintainer  :  Ian Duncan
 Stability   :  experimental
 Portability :  non-portable (GHC extensions)
 -}
-module OpenTelemetry.Attribute.Attribute (
+module OpenTelemetry.Attributes.Attribute (
   Attribute (..),
-  IsAttribute (..),
+  ToAttribute (..),
+  FromAttribute (..),
   PrimitiveAttribute (..),
-  IsPrimitiveAttribute (..),
+  ToPrimitiveAttribute (..),
+  FromPrimitiveAttribute (..),
 ) where
 
 import Data.Data (Data)
@@ -37,8 +39,11 @@ import Prelude hiding (lookup, map)
 
 
 -- | Convert a Haskell value to a 'PrimitiveAttribute' value.
-class IsPrimitiveAttribute a where
+class ToPrimitiveAttribute a where
   toPrimitiveAttribute :: a -> PrimitiveAttribute
+
+
+class FromPrimitiveAttribute a where
   fromPrimitiveAttribute :: PrimitiveAttribute -> Maybe a
 
 
@@ -85,90 +90,135 @@ data PrimitiveAttribute
 
 {- | Convert a Haskell value to an 'Attribute' value.
 
- For most values, you can define an instance of 'IsPrimitiveAttribute' and use the default 'toAttribute' implementation:
+ For most values, you can define an instance of 'ToAttribute' and use the default 'toAttribute' implementation:
 
  @
 
  data Foo = Foo
 
- instance IsPrimitiveAttribute Foo where
+ instance ToAttribute Foo where
    toPrimitiveAttribute Foo = TextAttribute "Foo"
- instance IsAttribute foo
+ instance ToAttribute foo
 
  @
 -}
-class IsAttribute a where
+class ToAttribute a where
   toAttribute :: a -> Attribute
-  default toAttribute :: (IsPrimitiveAttribute a) => a -> Attribute
+  default toAttribute :: (ToPrimitiveAttribute a) => a -> Attribute
   toAttribute = AttributeValue . toPrimitiveAttribute
+
+
+class FromAttribute a where
   fromAttribute :: Attribute -> Maybe a
-  default fromAttribute :: (IsPrimitiveAttribute a) => Attribute -> Maybe a
+  default fromAttribute :: (FromPrimitiveAttribute a) => Attribute -> Maybe a
   fromAttribute (AttributeValue v) = fromPrimitiveAttribute v
   fromAttribute _ = Nothing
 
 
-instance IsPrimitiveAttribute PrimitiveAttribute where
+instance ToPrimitiveAttribute PrimitiveAttribute where
   toPrimitiveAttribute = id
+
+
+instance FromPrimitiveAttribute PrimitiveAttribute where
   fromPrimitiveAttribute = Just
 
 
-instance IsAttribute PrimitiveAttribute where
+instance ToAttribute PrimitiveAttribute where
   toAttribute = AttributeValue
+
+
+instance FromAttribute PrimitiveAttribute where
   fromAttribute (AttributeValue v) = Just v
   fromAttribute _ = Nothing
 
 
-instance IsPrimitiveAttribute Text where
+instance ToPrimitiveAttribute Text where
   toPrimitiveAttribute = TextAttribute
+
+
+instance FromPrimitiveAttribute Text where
   fromPrimitiveAttribute (TextAttribute v) = Just v
   fromPrimitiveAttribute _ = Nothing
 
 
-instance IsAttribute Text
+instance ToAttribute Text
 
 
-instance IsPrimitiveAttribute Bool where
+instance FromAttribute Text
+
+
+instance ToPrimitiveAttribute Bool where
   toPrimitiveAttribute = BoolAttribute
+
+
+instance FromPrimitiveAttribute Bool where
   fromPrimitiveAttribute (BoolAttribute v) = Just v
   fromPrimitiveAttribute _ = Nothing
 
 
-instance IsAttribute Bool
+instance ToAttribute Bool
 
 
-instance IsPrimitiveAttribute Double where
+instance FromAttribute Bool
+
+
+instance ToPrimitiveAttribute Double where
   toPrimitiveAttribute = DoubleAttribute
+
+
+instance FromPrimitiveAttribute Double where
   fromPrimitiveAttribute (DoubleAttribute v) = Just v
   fromPrimitiveAttribute _ = Nothing
 
 
-instance IsAttribute Double
+instance ToAttribute Double
 
 
-instance IsPrimitiveAttribute Int64 where
+instance FromAttribute Double
+
+
+instance ToPrimitiveAttribute Int64 where
   toPrimitiveAttribute = IntAttribute
+
+
+instance FromPrimitiveAttribute Int64 where
   fromPrimitiveAttribute (IntAttribute v) = Just v
   fromPrimitiveAttribute _ = Nothing
 
 
-instance IsAttribute Int64
+instance ToAttribute Int64
 
 
-instance IsPrimitiveAttribute Int where
+instance FromAttribute Int64
+
+
+instance ToPrimitiveAttribute Int where
   toPrimitiveAttribute = IntAttribute . fromIntegral
+
+
+instance FromPrimitiveAttribute Int where
   fromPrimitiveAttribute (IntAttribute v) = Just $ fromIntegral v
   fromPrimitiveAttribute _ = Nothing
 
 
-instance IsAttribute Int
+instance ToAttribute Int
 
 
-instance IsAttribute Attribute where
+instance FromAttribute Int
+
+
+instance ToAttribute Attribute where
   toAttribute = id
+
+
+instance FromAttribute Attribute where
   fromAttribute = Just
 
 
-instance (IsPrimitiveAttribute a) => IsAttribute [a] where
+instance (ToPrimitiveAttribute a) => ToAttribute [a] where
   toAttribute = AttributeArray . L.map toPrimitiveAttribute
+
+
+instance (FromPrimitiveAttribute a) => FromAttribute [a] where
   fromAttribute (AttributeArray arr) = traverse fromPrimitiveAttribute arr
   fromAttribute _ = Nothing

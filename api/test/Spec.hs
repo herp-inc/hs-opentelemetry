@@ -8,7 +8,7 @@ import qualified Data.Bifunctor
 import Data.IORef
 import Data.Maybe (isJust)
 import qualified Data.Vector as V
-import OpenTelemetry.Attribute
+import OpenTelemetry.Attributes (lookupAttribute)
 import qualified OpenTelemetry.BaggageSpec as Baggage
 import OpenTelemetry.Context
 import OpenTelemetry.Trace.Core

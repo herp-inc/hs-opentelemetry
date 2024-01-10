@@ -68,8 +68,8 @@ import Herp.Logger ((.=))
 import qualified Herp.Logger as Orig
 import qualified Herp.Logger.LogLevel as Orig
 import qualified Herp.Logger.Payload as Orig
-import qualified OpenTelemetry.Attribute.AttributeCollection as OtelAttr
-import qualified OpenTelemetry.Attribute.Attributes as OtelAttr
+import qualified OpenTelemetry.Attributes as Otel
+import qualified OpenTelemetry.Attributes.Map as Otel
 import qualified OpenTelemetry.Context as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.Resource as Otel
@@ -208,14 +208,14 @@ datadogPayload tracerProvider maybeSpan = do
   let
     attributes = Otel.getMaterializedResourcesAttributes $ Otel.getTracerProviderResources tracerProvider
     maybeEnv :: Maybe Text
-    maybeEnv = OtelAttr.lookup Datadog.envKey $ OtelAttr.attributes attributes
+    maybeEnv = Otel.lookupByKey Datadog.envKey $ Otel.getAttributes attributes
     maybeService =
-      ( OtelAttr.lookup Datadog.serviceKey (OtelAttr.attributes attributes)
+      ( Otel.lookupByKey Datadog.serviceKey (Otel.getAttributes attributes)
           <|>
           -- "service.name" is the same key in the OpenTelemetry.Resource.Service module
-          OtelAttr.lookup "service.name" (OtelAttr.attributes attributes)
+          Otel.lookupByKey Otel.peer_service (Otel.getAttributes attributes)
       )
-    maybeVersion = OtelAttr.lookup Datadog.versionKey (OtelAttr.attributes attributes)
+    maybeVersion = Otel.lookupByKey Datadog.versionKey (Otel.getAttributes attributes)
   pure $
     (\payloadObject -> mempty {Orig.payloadObject}) $
       Aeson.fromList $

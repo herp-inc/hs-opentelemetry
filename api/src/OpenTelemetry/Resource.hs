@@ -45,8 +45,9 @@ module OpenTelemetry.Resource (
 
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
+import Data.Text (Text)
 import GHC.TypeLits
-import OpenTelemetry.Attribute
+import OpenTelemetry.Attributes
 
 
 {- | A set of attributes created from one or more resources.
@@ -64,7 +65,7 @@ import OpenTelemetry.Attribute
  The primary purpose of resources as a first-class concept in the SDK is decoupling of discovery of resource information from exporters.
  This allows for independent development and easy customization for users that need to integrate with closed source environments.
 -}
-newtype Resource (schema :: Maybe Symbol) = Resource AttributeCollection
+newtype Resource (schema :: Maybe Symbol) = Resource Attributes
 
 
 {- | Utility function to create a resource from a list
@@ -72,22 +73,22 @@ newtype Resource (schema :: Maybe Symbol) = Resource AttributeCollection
 
  @since 0.0.1.0
 -}
-mkResource :: [Maybe (Key Attribute, Attribute)] -> Resource r
+mkResource :: [Maybe (Text, Attribute)] -> Resource r
 mkResource = Resource . unsafeAttributesFromListIgnoringLimits . catMaybes
 
 
 {- | Utility function to convert a required resource attribute
  into the format needed for 'mkResource'.
 -}
-(.=) :: (IsAttribute a) => Key a -> a -> Maybe (Key Attribute, Attribute)
-(Key k) .= v = Just (Key k, toAttribute v)
+(.=) :: (ToAttribute a) => Text -> a -> Maybe (Text, Attribute)
+k .= v = Just (k, toAttribute v)
 
 
 {- | Utility function to convert an optional resource attribute
  into the format needed for 'mkResource'.
 -}
-(.=?) :: (IsAttribute a) => Key a -> Maybe a -> Maybe (Key Attribute, Attribute)
-k .=? mv = (\(Key k') v -> (Key k', toAttribute v)) k <$> mv
+(.=?) :: (ToAttribute a) => Text -> Maybe a -> Maybe (Text, Attribute)
+k .=? mv = (\k' v -> (k', toAttribute v)) k <$> mv
 
 
 instance Semigroup (Resource s) where
@@ -173,7 +174,7 @@ instance (KnownSymbol s) => MaterializeResource ('Just s) where
 -- | A read-only resource attribute collection with an associated schema.
 data MaterializedResources = MaterializedResources
   { materializedResourcesSchema :: Maybe String
-  , materializedResourcesAttributes :: AttributeCollection
+  , materializedResourcesAttributes :: Attributes
   }
   deriving (Show)
 
@@ -199,5 +200,5 @@ getMaterializedResourcesSchema = materializedResourcesSchema
 
  @since 0.0.1.0
 -}
-getMaterializedResourcesAttributes :: MaterializedResources -> AttributeCollection
+getMaterializedResourcesAttributes :: MaterializedResources -> Attributes
 getMaterializedResourcesAttributes = materializedResourcesAttributes
