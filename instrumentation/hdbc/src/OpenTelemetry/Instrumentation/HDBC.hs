@@ -36,9 +36,8 @@ import Database.HDBC (
  )
 import GHC.Generics (Generic)
 import GHC.Stack (withFrozenCallStack)
-import qualified OpenTelemetry.Attribute as Attr
-import qualified OpenTelemetry.Attribute.Attributes as Attr
-import qualified OpenTelemetry.Attribute.Key as Attr
+import qualified OpenTelemetry.Attributes as Attr
+import qualified OpenTelemetry.Attributes.Map as Attr
 import qualified OpenTelemetry.Trace.Core as Otel
 
 
@@ -46,7 +45,7 @@ type Connection :: Type
 data Connection = Connection
   { original :: ConnWrapper
   , tracer :: Otel.Tracer
-  , attributes :: Attr.Attributes
+  , attributes :: Attr.AttributeMap
   }
 
 
@@ -73,7 +72,7 @@ makeConnection ::
   Otel.TracerProvider ->
   Attributes ->
   -- | Extra attributes
-  Attr.Attributes ->
+  Attr.AttributeMap ->
   Connection
 makeConnection original provider attributes extraAttributes =
   Connection
@@ -83,7 +82,7 @@ makeConnection original provider attributes extraAttributes =
     }
 
 
-convertAttributes :: Attributes -> Attr.Attributes
+convertAttributes :: Attributes -> Attr.AttributeMap
 convertAttributes
   Attributes
     { db_connectionString
@@ -108,13 +107,13 @@ convertAttributes
       & insert Attr.server_port (fromIntegral <$> server_port)
     where
       insert ::
-        Attr.IsAttribute a =>
+        Attr.ToAttribute a =>
         Attr.Key a ->
         Maybe a ->
-        Attr.Attributes ->
-        Attr.Attributes
+        Attr.AttributeMap ->
+        Attr.AttributeMap
       insert _ Nothing = id
-      insert key (Just value) = Attr.insert key value
+      insert key (Just value) = Attr.insertByKey key value
 
 
 instance IConnection Connection where
@@ -138,14 +137,14 @@ instance IConnection Connection where
 
   run Connection {original, tracer, attributes} query params =
     withFrozenCallStack $ do
-      let attributes' = Attr.insert Attr.db_statement (Text.pack query) attributes
+      let attributes' = Attr.insertByKey Attr.db_statement (Text.pack query) attributes
       Otel.inSpan tracer "run" (defaultSpanArguments attributes') $
         run original query params
 
 
   prepare Connection {original, tracer, attributes} query =
     withFrozenCallStack $ do
-      let attributes' = Attr.insert Attr.db_statement (Text.pack query) attributes
+      let attributes' = Attr.insertByKey Attr.db_statement (Text.pack query) attributes
       Otel.inSpan tracer "prepare" (defaultSpanArguments attributes') $
         prepare original query
 
@@ -183,11 +182,11 @@ instance IConnection Connection where
 
   describeTable Connection {original, tracer, attributes} tableName =
     withFrozenCallStack $ do
-      let attributes' = Attr.insert Attr.db_sql_table (Text.pack tableName) attributes
+      let attributes' = Attr.insertByKey Attr.db_sql_table (Text.pack tableName) attributes
       Otel.inSpan tracer "describeTable" (defaultSpanArguments attributes') $
         describeTable original tableName
 
 
-defaultSpanArguments :: Attr.Attributes -> Otel.SpanArguments
+defaultSpanArguments :: Attr.AttributeMap -> Otel.SpanArguments
 defaultSpanArguments attributes =
   def {Otel.kind = Otel.Client, Otel.attributes = attributes}
