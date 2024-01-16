@@ -39,7 +39,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Vault.Lazy as V
-import GHC.Stack (HasCallStack)
+import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Language.Haskell.TH (
   Clause,
   Dec,
@@ -60,15 +60,6 @@ import Language.Haskell.TH (
   varP,
   wildP,
  )
-
-
-#if MIN_VERSION_template_haskell(2, 17, 0)
-import Language.Haskell.TH (Quote (newName))
-#else
-import Language.Haskell.TH (newName)
-#endif
-import qualified Data.HashMap.Strict as H
-import GHC.Stack (withFrozenCallStack)
 import Lens.Micro (Lens', lens)
 import Network.Wai (Request (vault), requestHeaders)
 import qualified OpenTelemetry.Context as Context
@@ -120,6 +111,13 @@ import Yesod.Routes.TH.Types (
   ResourceTree (ResourceLeaf, ResourceParent),
   flatten,
  )
+
+
+#if MIN_VERSION_template_haskell(2, 17, 0)
+import Language.Haskell.TH (Quote (newName))
+#else
+import Language.Haskell.TH (newName)
+#endif
 
 
 handlerEnvL :: Lens' (HandlerData child site) (RunHandlerEnv child site)

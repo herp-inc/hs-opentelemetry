@@ -105,12 +105,17 @@ module OpenTelemetry.Trace.Core (
   -- ** Enriching @Span@s with additional information
   updateName,
   OpenTelemetry.Trace.Core.addAttribute,
+  OpenTelemetry.Trace.Core.addAttributeByKey,
   OpenTelemetry.Trace.Core.addAttributes,
   spanGetAttributes,
   A.Attribute (..),
   A.ToAttribute (..),
+  A.FromAttribute (..),
   A.PrimitiveAttribute (..),
   A.ToPrimitiveAttribute (..),
+  A.FromPrimitiveAttribute (..),
+  A.Key,
+  A.Attributes,
 
   -- ** Recording error information
   recordException,
@@ -433,6 +438,18 @@ addAttribute (Span s) k v = liftIO $ modifyIORef' s $ \(!i) ->
     }
 addAttribute (FrozenSpan _) _ _ = pure ()
 addAttribute (Dropped _) _ _ = pure ()
+
+
+addAttributeByKey ::
+  (MonadIO m, A.ToAttribute a) =>
+  -- | Span to add the attribute to
+  Span ->
+  -- | Attribute key
+  A.Key a ->
+  -- | Attribute value
+  a ->
+  m ()
+addAttributeByKey s (A.Key k) = addAttribute s k
 
 
 {- | A convenience function related to 'addAttribute' that adds multiple attributes to a span at the same time.

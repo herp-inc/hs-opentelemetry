@@ -18,23 +18,34 @@
 
  An Attribute is a key-value pair, which MUST have the following properties:
 
- - The attribute key MUST be a non-null and non-empty string.
+ - The attribute key MUST be a non-@null@ and non-empty string.
  - The attribute value is either:
- - A primitive type: string, boolean, double precision floating point (IEEE 754-1985) or signed 64 bit integer.
- - An array of primitive type values. The array MUST be homogeneous, i.e., it MUST NOT contain values of different types. For protocols that do not natively support array values such values SHOULD be represented as JSON strings.
- - Attribute values expressing a numerical value of zero, an empty string, or an empty array are considered meaningful and MUST be stored and passed on to processors / exporters.
+
+     - A primitive type: string, boolean, double precision floating point (IEEE 754-1985) or signed 64 bit integer.
+     - An array of primitive type values. The array MUST be homogeneous, i.e., it MUST NOT contain values of different types. For protocols that do not natively support array values such values SHOULD be represented as JSON strings.
+
+ Attribute values expressing a numerical value of zero, an empty string, or an empty array are considered meaningful and MUST be stored and passed on to processors \/ exporters.
+
+ Specification: https://opentelemetry.io/docs/specs/otel/common/
 -}
 module OpenTelemetry.Attributes (
   Attributes,
   emptyAttributes,
   addAttribute,
+  addAttributeByKey,
   addAttributes,
-  getAttributes,
   lookupAttribute,
+  lookupAttributeByKey,
+  getAttributes,
+  getCount,
   Attribute (..),
   ToAttribute (..),
+  FromAttribute (..),
   PrimitiveAttribute (..),
   ToPrimitiveAttribute (..),
+  FromPrimitiveAttribute (..),
+  Key (..),
+  module Key,
 
   -- * Attribute limits
   AttributeLimits (..),
@@ -49,11 +60,13 @@ import Data.Data (Data)
 import Data.Default.Class (Default (def))
 import qualified Data.HashMap.Strict as H
 import Data.Hashable (Hashable)
-import Data.Int (Int64)
-import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
+import OpenTelemetry.Attributes.Attribute (Attribute (..), FromAttribute (..), FromPrimitiveAttribute (..), PrimitiveAttribute (..), ToAttribute (..), ToPrimitiveAttribute (..))
+import OpenTelemetry.Attributes.Key as Key
+import qualified OpenTelemetry.Attributes.Map as A
+import Prelude hiding (lookup)
 
 
 {- | Default attribute limits used in the global attribute limit configuration if no environment variables are set.
@@ -61,7 +74,7 @@ import GHC.Generics (Generic)
  Values:
 
  - 'attributeCountLimit': @Just 128@
- - 'attributeLengthLimit':  or @Nothing@
+ - 'attributeLengthLimit': Infinity or @Nothing@
 -}
 defaultAttributeLimits :: AttributeLimits
 defaultAttributeLimits =
@@ -77,6 +90,10 @@ data Attributes = Attributes
   , attributesDropped :: {-# UNPACK #-} !Int
   }
   deriving stock (Show, Eq)
+
+
+instance Default Attributes where
+  def = emptyAttributes
 
 
 emptyAttributes :: Attributes
@@ -96,7 +113,11 @@ addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLim
 {-# INLINE addAttribute #-}
 
 
-addAttributes :: ToAttribute a => AttributeLimits -> Attributes -> H.HashMap Text a -> Attributes
+addAttributeByKey :: (ToAttribute a) => AttributeLimits -> Attributes -> Key a -> a -> Attributes
+addAttributeByKey limits attrs (Key k) !v = addAttribute limits attrs k v
+
+
+addAttributes :: AttributeLimits -> Attributes -> H.HashMap Text Attribute -> Attributes
 addAttributes AttributeLimits {..} Attributes {..} attrs = case attributeCountLimit of
   Nothing -> Attributes newAttrs newCount attributesDropped
   Just limit_ ->
@@ -104,7 +125,7 @@ addAttributes AttributeLimits {..} Attributes {..} attrs = case attributeCountLi
       then Attributes attributes attributesCount (attributesDropped + H.size attrs)
       else Attributes newAttrs newCount attributesDropped
   where
-    newAttrs = H.union attributes $ H.map toAttribute attrs
+    newAttrs = H.union attributes attrs
     newCount = H.size newAttrs
 {-# INLINE addAttributes #-}
 
@@ -119,12 +140,20 @@ limitLengths limit (AttributeValue val) = AttributeValue $ limitPrimAttr limit v
 limitLengths limit (AttributeArray arr) = AttributeArray $ fmap (limitPrimAttr limit) arr
 
 
-getAttributes :: Attributes -> (Int, H.HashMap Text Attribute)
-getAttributes Attributes {..} = (attributesCount, attributes)
+getAttributes :: Attributes -> H.HashMap Text Attribute
+getAttributes Attributes {..} = attributes
+
+
+getCount :: Attributes -> Int
+getCount Attributes {..} = attributesCount
 
 
 lookupAttribute :: Attributes -> Text -> Maybe Attribute
 lookupAttribute Attributes {..} k = H.lookup k attributes
+
+
+lookupAttributeByKey :: FromAttribute a => Attributes -> Key a -> Maybe a
+lookupAttributeByKey Attributes {..} k = A.lookupByKey k attributes
 
 
 {- | It is possible when adding attributes that a programming error might cause too many
@@ -144,123 +173,6 @@ data AttributeLimits = AttributeLimits
 
 instance Default AttributeLimits where
   def = defaultAttributeLimits
-
-
--- | Convert a Haskell value to a 'PrimitiveAttribute' value.
-class ToPrimitiveAttribute a where
-  toPrimitiveAttribute :: a -> PrimitiveAttribute
-
-
-{- | An attribute represents user-provided metadata about a span, link, or event.
-
- Telemetry tools may use this data to support high-cardinality querying, visualization
- in waterfall diagrams, trace sampling decisions, and more.
--}
-data Attribute
-  = -- | An attribute representing a single primitive value
-    AttributeValue PrimitiveAttribute
-  | -- | An attribute representing an array of primitive values.
-    --
-    -- All values in the array MUST be of the same primitive attribute type.
-    AttributeArray [PrimitiveAttribute]
-  deriving stock (Read, Show, Eq, Ord, Data, Generic)
-  deriving anyclass (Hashable)
-
-
-{- | Create a `TextAttribute` from the string value.
-
- @since 0.0.2.1
--}
-instance IsString PrimitiveAttribute where
-  fromString = TextAttribute . fromString
-
-
-{- | Create a `TextAttribute` from the string value.
-
- @since 0.0.2.1
--}
-instance IsString Attribute where
-  fromString = AttributeValue . fromString
-
-
-data PrimitiveAttribute
-  = TextAttribute Text
-  | BoolAttribute Bool
-  | DoubleAttribute Double
-  | IntAttribute Int64
-  deriving stock (Read, Show, Eq, Ord, Data, Generic)
-  deriving anyclass (Hashable)
-
-
-{- | Convert a Haskell value to an 'Attribute' value.
-
- For most values, you can define an instance of 'ToPrimitiveAttribute' and use the default 'toAttribute' implementation:
-
- @
-
- data Foo = Foo
-
- instance ToPrimitiveAttribute Foo where
-   toPrimitiveAttribute Foo = TextAttribute "Foo"
- instance ToAttribute foo
-
- @
--}
-class ToAttribute a where
-  toAttribute :: a -> Attribute
-  default toAttribute :: (ToPrimitiveAttribute a) => a -> Attribute
-  toAttribute = AttributeValue . toPrimitiveAttribute
-
-
-instance ToPrimitiveAttribute PrimitiveAttribute where
-  toPrimitiveAttribute = id
-
-
-instance ToAttribute PrimitiveAttribute where
-  toAttribute = AttributeValue
-
-
-instance ToPrimitiveAttribute Text where
-  toPrimitiveAttribute = TextAttribute
-
-
-instance ToAttribute Text
-
-
-instance ToPrimitiveAttribute Bool where
-  toPrimitiveAttribute = BoolAttribute
-
-
-instance ToAttribute Bool
-
-
-instance ToPrimitiveAttribute Double where
-  toPrimitiveAttribute = DoubleAttribute
-
-
-instance ToAttribute Double
-
-
-instance ToPrimitiveAttribute Int64 where
-  toPrimitiveAttribute = IntAttribute
-
-
-instance ToAttribute Int64
-
-
-instance ToPrimitiveAttribute Int where
-  toPrimitiveAttribute = IntAttribute . fromIntegral
-
-
-instance ToAttribute Int
-
-
-instance ToAttribute Attribute where
-  toAttribute = id
-
-
-instance (ToPrimitiveAttribute a) => ToAttribute [a] where
-  toAttribute = AttributeArray . map toPrimitiveAttribute
 
 
 unsafeMergeAttributesIgnoringLimits :: Attributes -> Attributes -> Attributes

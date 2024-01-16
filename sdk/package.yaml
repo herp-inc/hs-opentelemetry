@@ -50,6 +50,9 @@ library:
   source-dirs: src
   reexported-modules:
     - OpenTelemetry.Attributes
+    - OpenTelemetry.Attributes.Attribute
+    - OpenTelemetry.Attributes.Key
+    - OpenTelemetry.Attributes.Map
     - OpenTelemetry.Baggage
     - OpenTelemetry.Context
     - OpenTelemetry.Context.ThreadLocal

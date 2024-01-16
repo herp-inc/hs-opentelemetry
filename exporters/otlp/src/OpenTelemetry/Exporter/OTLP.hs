@@ -303,7 +303,6 @@ attributesToProto =
   V.fromList
     . fmap attributeToKeyValue
     . H.toList
-    . snd
     . getAttributes
   where
     primAttributeToAnyValue = \case
@@ -394,7 +393,7 @@ makeSpan completedSpan = do
       & startTimeUnixNano .~ startTime
       & endTimeUnixNano .~ maybe startTime timestampNanoseconds (OT.spanEnd completedSpan)
       & vec'attributes .~ attributesToProto (OT.spanAttributes completedSpan)
-      & droppedAttributesCount .~ fromIntegral (fst (getAttributes $ OT.spanAttributes completedSpan))
+      & droppedAttributesCount .~ fromIntegral (getCount $ OT.spanAttributes completedSpan)
       & vec'events .~ fmap makeEvent (appendOnlyBoundedCollectionValues $ OT.spanEvents completedSpan)
       & droppedEventsCount .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.spanEvents completedSpan))
       & vec'links .~ fmap makeLink (frozenBoundedCollectionValues $ OT.spanLinks completedSpan)
@@ -421,7 +420,7 @@ makeEvent e =
     & timeUnixNano .~ timestampNanoseconds (OT.eventTimestamp e)
     & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.eventName e
     & vec'attributes .~ attributesToProto (OT.eventAttributes e)
-    & droppedAttributesCount .~ fromIntegral (fst (getAttributes $ OT.eventAttributes e))
+    & droppedAttributesCount .~ fromIntegral (getCount $ OT.eventAttributes e)
 
 
 makeLink :: OT.Link -> Span'Link
@@ -430,4 +429,4 @@ makeLink l =
     & traceId .~ traceIdBytes (OT.traceId $ OT.frozenLinkContext l)
     & spanId .~ spanIdBytes (OT.spanId $ OT.frozenLinkContext l)
     & vec'attributes .~ attributesToProto (OT.frozenLinkAttributes l)
-    & droppedAttributesCount .~ fromIntegral (fst (getAttributes $ OT.frozenLinkAttributes l))
+    & droppedAttributesCount .~ fromIntegral (getCount $ OT.frozenLinkAttributes l)

@@ -69,6 +69,7 @@ import qualified Herp.Logger as Orig
 import qualified Herp.Logger.LogLevel as Orig
 import qualified Herp.Logger.Payload as Orig
 import qualified OpenTelemetry.Attributes as Otel
+import qualified OpenTelemetry.Attributes.Map as Otel
 import qualified OpenTelemetry.Context as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.Resource as Otel
@@ -206,15 +207,15 @@ datadogPayload tracerProvider maybeSpan = do
           )
   let
     attributes = Otel.getMaterializedResourcesAttributes $ Otel.getTracerProviderResources tracerProvider
-    maybeEnv = attributeAsText =<< Otel.lookupAttribute attributes Datadog.envKey
+    maybeEnv :: Maybe Text
+    maybeEnv = Otel.lookupByKey Datadog.envKey $ Otel.getAttributes attributes
     maybeService =
-      attributeAsText
-        =<< ( Otel.lookupAttribute attributes Datadog.serviceKey
-                <|>
-                -- "service.name" is the same key in the OpenTelemetry.Resource.Service module
-                Otel.lookupAttribute attributes "service.name"
-            )
-    maybeVersion = attributeAsText =<< Otel.lookupAttribute attributes Datadog.versionKey
+      ( Otel.lookupByKey Datadog.serviceKey (Otel.getAttributes attributes)
+          <|>
+          -- "service.name" is the same key in the OpenTelemetry.Resource.Service module
+          Otel.lookupByKey Otel.peer_service (Otel.getAttributes attributes)
+      )
+    maybeVersion = Otel.lookupByKey Datadog.versionKey (Otel.getAttributes attributes)
   pure $
     (\payloadObject -> mempty {Orig.payloadObject}) $
       Aeson.fromList $
@@ -226,8 +227,3 @@ datadogPayload tracerProvider maybeSpan = do
                 , ("dd.service",) . Aeson.String <$> maybeService
                 , ("dd.version",) . Aeson.String <$> maybeVersion
                 ]
-
-
-attributeAsText :: Otel.Attribute -> Maybe Text
-attributeAsText (Otel.AttributeValue (Otel.TextAttribute a)) = Just a
-attributeAsText _ = Nothing
