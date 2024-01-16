@@ -11,14 +11,13 @@ module OpenTelemetry.Instrumentation.HDBC.MySQL (
 
 import qualified Data.Text as Text
 import qualified Database.HDBC.MySQL as Orig
-import qualified OpenTelemetry.Attribute as Attr
-import qualified OpenTelemetry.Attribute.Attributes as Attr
-import qualified OpenTelemetry.Attribute.Key as Attr
+import qualified OpenTelemetry.Attributes as Attr
+import qualified OpenTelemetry.Attributes.Map as Attr
 import qualified OpenTelemetry.Instrumentation.HDBC as Otel
 import qualified OpenTelemetry.Trace.Core as Otel
 
 
-connectMySQL :: Otel.TracerProvider -> Attr.Attributes -> Orig.MySQLConnectInfo -> IO Otel.Connection
+connectMySQL :: Otel.TracerProvider -> Attr.AttributeMap -> Orig.MySQLConnectInfo -> IO Otel.Connection
 connectMySQL
   tracerProvider
   extraAttributes
@@ -48,5 +47,5 @@ connectMySQL
             , Otel.server_address = Just $ Text.pack mysqlHost
             , Otel.server_port = port
             }
-        extraAttributes' = Attr.insert Attr.db_name (Text.pack mysqlDatabase) extraAttributes
+        extraAttributes' = Attr.insertByKey Attr.db_name (Text.pack mysqlDatabase) extraAttributes
     pure $ Otel.makeConnection connection tracerProvider attributes extraAttributes'

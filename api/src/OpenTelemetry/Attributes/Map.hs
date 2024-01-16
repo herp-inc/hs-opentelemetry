@@ -25,9 +25,10 @@ module OpenTelemetry.Attributes.Map (
   insertAttributeByKey,
   lookupByKey,
   lookupAttributeByKey,
+  module H,
 ) where
 
-import qualified Data.HashMap.Strict as H
+import Data.HashMap.Strict as H
 import Data.Text (Text)
 import OpenTelemetry.Attributes.Attribute (
   Attribute,
