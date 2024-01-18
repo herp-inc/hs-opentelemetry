@@ -26,10 +26,10 @@ cradle:
             - path: "api/test"
               component: "hs-opentelemetry-api:test:hs-opentelemetry-api-test"
 
-            - path: "examples/grpc-echo/./EchoClient.hs"
+            - path: "examples/grpc-echo/EchoClient.hs"
               component: "grpc-echo-example:exe:echo-client"
 
-            - path: "examples/grpc-echo/./EchoServer.hs"
+            - path: "examples/grpc-echo/EchoServer.hs"
               component: "grpc-echo-example:exe:echo-server"
 
             - path: "examples/grpc-echo/gen"
@@ -37,6 +37,9 @@ cradle:
 
             - path: "examples/hdbc-mysql/main.hs"
               component: "hdbc-mysql-example:exe:hdbc-mysql-example"
+
+            - path: "examples/http-server/main.hs"
+              component: "http-server:exe:http-server"
 
             - path: "examples/yesod-minimal/src"
               component: "lib:yesod-minimal"
@@ -93,7 +96,7 @@ cradle:
               component: "lib:hs-opentelemetry-instrumentation-HDBC"
 
             - path: "instrumentation/hdbc-mysql/src"
-              component: "lib:hs-opentelemetry-instrumentation-HDBC-MySQL"
+              component: "lib:hs-opentelemetry-instrumentation-HDBC-mysql"
 
             - path: "instrumentation/hedis/src"
               component: "lib:hs-opentelemetry-instrumentation-hedis"
@@ -197,8 +200,8 @@ cradle:
             - path: "utils/exceptions/test"
               component: "hs-opentelemetry-utils-exceptions:test:exceptions-test"
 
-            - path: "vendors/datadog"
+            - path: "vendors/datadog/src"
               component: "lib:hs-opentelemetry-vendor-datadog"
 
             - path: "vendors/datadog/test/spec"
-              component: "hs-opentelemetry-vendors-datadog:test:spec"
+              component: "hs-opentelemetry-vendor-datadog:test:spec"
