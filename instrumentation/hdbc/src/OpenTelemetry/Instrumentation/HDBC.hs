@@ -8,6 +8,7 @@ module OpenTelemetry.Instrumentation.HDBC (
   Connection (..),
   Attributes (..),
   makeConnection,
+  module HDBC,
 ) where
 
 import Data.Default.Class (def)
@@ -15,6 +16,7 @@ import Data.Function ((&))
 import Data.Kind (Type)
 import Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Database.HDBC as HDBC
 import Database.HDBC (
   ConnWrapper (ConnWrapper),
   IConnection (
