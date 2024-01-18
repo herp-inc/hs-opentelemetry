@@ -16,7 +16,6 @@ import Data.Function ((&))
 import Data.Kind (Type)
 import Data.Text (Text)
 import qualified Data.Text as Text
-import qualified Database.HDBC as HDBC
 import Database.HDBC (
   ConnWrapper (ConnWrapper),
   IConnection (
@@ -36,6 +35,7 @@ import Database.HDBC (
     run
   ),
  )
+import qualified Database.HDBC as HDBC
 import GHC.Generics (Generic)
 import GHC.Stack (withFrozenCallStack)
 import qualified OpenTelemetry.Attributes as Attr

@@ -17,6 +17,11 @@ tested-with: GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.5
 extra-source-files: README.md,
                     CHANGELOG.md
 
+flag proto3-suite-no-prefix
+  description: proto3-suite のプレフィックスなしのバージョンを使っている場合にそれに対応する
+  default: False
+  manual: True
+
 common common
   build-depends: base >= 4 && < 5
   ghc-options: -Wall
@@ -78,3 +83,6 @@ library
                  grpc-haskell-core,
                  http-types,
                  text
+  if flag(proto3-suite-no-prefix)
+    ghc-options: -DPROTO3_SUITE_NO_PREFIX
+    build-depends: proto3-suite
