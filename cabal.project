@@ -2,19 +2,23 @@ packages:
     api
   , sdk
   , otlp
+  , examples/grpc-echo
+  , examples/hdbc-mysql
+  , examples/http-server
   , examples/yesod-minimal
+  , examples/yesod-subsite
   , exporters/handle
   , exporters/in-memory
+  -- , exporters/jaeger
   , exporters/otlp
-  , propagators/datadog
-  , propagators/w3c
-  , propagators/b3
+  -- , exporters/prometheus
   , instrumentation/cloudflare
   , instrumentation/conduit
   , instrumentation/grpc-haskell
   , instrumentation/hdbc
   , instrumentation/hdbc-mysql
   , instrumentation/hedis
+  -- ↓ 本家に PR しない
   , instrumentation/herp-logger-datadog
   , instrumentation/hspec
   , instrumentation/http-client
@@ -23,11 +27,10 @@ packages:
   , instrumentation/postgresql-simple
   , instrumentation/wai
   , instrumentation/yesod
-  , examples/grpc-echo
-  , examples/hdbc-mysql
-  , examples/http-server
-  , examples/yesod-minimal
-  , examples/yesod-subsite
+  , propagators/b3
+  , propagators/datadog
+  -- , propagators/jaeger
+  , propagators/w3c
   , utils/exceptions
   , vendors/datadog
 

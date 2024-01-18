@@ -4,33 +4,34 @@ packages:
 - api
 - sdk
 - otlp
+# - examples/grpc-echo # only able to be built with cabal
+- examples/hdbc-mysql
+- examples/http-server
+- examples/yesod-minimal
+- examples/yesod-subsite
 - exporters/handle
 - exporters/in-memory
 # - exporters/jaeger
 - exporters/otlp
 # - exporters/prometheus
-- propagators/b3
-- propagators/datadog
-# - propagators/jaeger
-- propagators/w3c
-- instrumentation/conduit
 - instrumentation/cloudflare
-# - instrumentation/grpc-haskell # able to be built with cabal
+- instrumentation/conduit
+# - instrumentation/grpc-haskell # only able to be built with cabal
 - instrumentation/hdbc
 - instrumentation/hdbc-mysql
 - instrumentation/hedis
-# - instrumentation/herp-logger-datadog
+# - instrumentation/herp-logger-datadog # 本家に PR しない
 - instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/persistent
 - instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
-- instrumentation/yesod
 - instrumentation/wai
-- examples/hdbc-mysql
-- examples/http-server
-- examples/yesod-minimal
-- examples/yesod-subsite
+- instrumentation/yesod
+- propagators/b3
+- propagators/datadog
+# - propagators/jaeger
+- propagators/w3c
 - utils/exceptions
 - vendors/datadog
 
