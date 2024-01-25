@@ -26,6 +26,9 @@ cradle:
             - path: "api/test"
               component: "hs-opentelemetry-api:test:hs-opentelemetry-api-test"
 
+            - path: "examples/aws-s3/main.hs"
+              component: "aws-s3-example:exe:aws-s3-example"
+
             - path: "examples/grpc-echo/EchoClient.hs"
               component: "grpc-echo-example:exe:echo-client"
 
@@ -76,6 +79,9 @@ cradle:
 
             - path: "exporters/otlp/test"
               component: "hs-opentelemetry-exporter-otlp:test:hs-opentelemetry-exporter-otlp-test"
+
+            - path: "instrumentation/amazonka/src"
+              component: "lib:hs-opentelemetry-instrumentation-amazonka"
 
             - path: "instrumentation/cloudflare/src"
               component: "lib:hs-opentelemetry-instrumentation-cloudflare"

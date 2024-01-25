@@ -1,0 +1,45 @@
+cabal-version: 3.4
+
+name: aws-s3-example
+version: 0.0.0
+build-type: Simple
+
+common common
+  ghc-options: -threaded
+               -with-rtsopts=-N
+               -Wall
+               -Wcompat
+               -Widentities
+               -Wincomplete-record-updates
+               -Wincomplete-uni-patterns
+               -Wmissing-export-lists
+               -Wmissing-exported-signatures
+               -Wmissing-home-modules
+               -Wmissing-export-lists
+               -Wmonomorphism-restriction
+               -Wno-name-shadowing
+               -Wpartial-fields
+               -Wredundant-constraints
+               -Wunused-packages
+  if impl(ghc >= 9.0)
+    ghc-options: -Winvalid-haddock
+  if impl(ghc >= 9.2)
+    ghc-options: -Wmissing-kind-signatures
+                 -Woperator-whitespace
+                 -Wredundant-bang-patterns
+  default-language: Haskell2010
+
+executable aws-s3-example
+  import: common
+  main-is: main.hs
+  hs-source-dirs: .
+  build-depends: base,
+                 amazonka,
+                 amazonka-core,
+                 amazonka-s3,
+                 bytestring,
+                 conduit,
+                 hs-opentelemetry-api,
+                 hs-opentelemetry-instrumentation-amazonka,
+                 hs-opentelemetry-sdk,
+                 text

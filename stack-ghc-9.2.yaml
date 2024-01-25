@@ -4,6 +4,7 @@ packages:
 - api
 - sdk
 - otlp
+- examples/aws-s3
 # - examples/grpc-echo # only able to be built with cabal
 - examples/hdbc-mysql
 - examples/http-server
@@ -14,6 +15,7 @@ packages:
 # - exporters/jaeger
 - exporters/otlp
 # - exporters/prometheus
+- instrumentation/amazonka
 - instrumentation/cloudflare
 - instrumentation/conduit
 # - instrumentation/grpc-haskell # only able to be built with cabal
