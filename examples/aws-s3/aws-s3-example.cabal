@@ -42,4 +42,3 @@ executable aws-s3-example
                  hs-opentelemetry-api,
                  hs-opentelemetry-instrumentation-amazonka,
                  hs-opentelemetry-sdk,
-                 text
