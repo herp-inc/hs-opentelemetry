@@ -45,78 +45,8 @@ import qualified OpenTelemetry.Trace.Core as Otel
 import Paths_hs_opentelemetry_instrumentation_amazonka (version)
 
 
--- | Wrapper to avoid impredicative polymorphism.
-newtype ConfiguredRequestHookUpdate
-  = ConfiguredRequestHookUpdate (forall a. (AWSRequest a, Typeable a, HasCallStack) => Hooks.Hook (Request a) -> Hooks.Hook (Request a))
-
-
--- | Wrapper to avoid impredicative polymorphism.
-newtype ClientRequestHookUpdate
-  = ClientRequestHookUpdate (Hooks.Hook ClientRequest -> Hooks.Hook ClientRequest)
-
-
--- | Wrapper to avoid impredicative polymorphism.
-newtype ClientResponseHookUpdate
-  = ClientResponseHookUpdate
-      ( forall a.
-        (AWSRequest a, Typeable a) =>
-        Hooks.Hook_ (Request a, ClientResponse ()) ->
-        Hooks.Hook_ (Request a, ClientResponse ())
-      )
-
-
--- | Wrapper to avoid impredicative polymorphism.
-newtype ResponseHookUpdate
-  = ResponseHookUpdate
-      ( forall a.
-        (AWSRequest a, Typeable a) =>
-        Hooks.Hook_ (Request a, ClientResponse (AWSResponse a)) ->
-        Hooks.Hook_ (Request a, ClientResponse (AWSResponse a))
-      )
-
-
--- | Wrapper to avoid impredicative polymorphism.
-newtype ErrorHookUpdate
-  = ErrorHookUpdate
-      ( forall a.
-        (AWSRequest a, Typeable a) =>
-        Hooks.Hook_ (Hooks.Finality, Request a, Error) ->
-        Hooks.Hook_ (Hooks.Finality, Request a, Error)
-      )
-
-
 appendHooksToEnv :: (MonadIO m, HasCallStack) => Otel.TracerProvider -> Env' withAuth -> m (Env' withAuth)
-appendHooksToEnv tracerProvider e@Env {hooks} = withFrozenCallStack $ liftIO $ do
-  ( ConfiguredRequestHookUpdate configuredRequestHook
-    , ClientRequestHookUpdate clientRequestHook
-    , ClientResponseHookUpdate clientResponseHook
-    , ResponseHookUpdate responseHook
-    , ErrorHookUpdate errorHook
-    ) <-
-    liftIO $ createHooks tracerProvider
-  pure $
-    e
-      { hooks =
-          hooks
-            & Hooks.configuredRequestHook configuredRequestHook
-            & Hooks.clientRequestHook clientRequestHook
-            & Hooks.clientResponseHook clientResponseHook
-            & Hooks.responseHook responseHook
-            & Hooks.errorHook errorHook
-      }
-
-
-createHooks ::
-  HasCallStack =>
-  Otel.TracerProvider ->
-  IO
-    ( ConfiguredRequestHookUpdate
-    , ClientRequestHookUpdate
-    , ClientResponseHookUpdate
-    , ResponseHookUpdate
-    , ErrorHookUpdate
-    )
-createHooks tracerProvider = withFrozenCallStack $ do
+appendHooksToEnv tracerProvider env@Env {hooks} = withFrozenCallStack $ liftIO $ do
   let
     tracer =
       Otel.makeTracer
@@ -128,13 +58,16 @@ createHooks tracerProvider = withFrozenCallStack $ do
         )
         Otel.tracerOptions
   tls <- makeThreadLocalStorage
-  pure
-    ( ConfiguredRequestHookUpdate $ configuredRequestHook tracer tls
-    , ClientRequestHookUpdate $ clientRequestHook tracer tls
-    , ClientResponseHookUpdate $ clientResponseHook tls
-    , ResponseHookUpdate $ responseHook tls
-    , ErrorHookUpdate $ errorHook tls
-    )
+  pure $
+    env
+      { hooks =
+          hooks
+            & Hooks.configuredRequestHook (configuredRequestHook tracer tls)
+            & Hooks.clientRequestHook (clientRequestHook tracer tls)
+            & Hooks.clientResponseHook (clientResponseHook tls)
+            & Hooks.responseHook (responseHook tls)
+            & Hooks.errorHook (errorHook tls)
+      }
 
 
 type ThreadLocalStorage = TLS.TLS (IORef (UpTo2Lifo Otel.Span))
@@ -202,7 +135,6 @@ errorHook ::
   (AWSRequest a, Typeable a) =>
   Hooks.Hook_ (Hooks.Finality, Request a, Error) ->
   Hooks.Hook_ (Hooks.Finality, Request a, Error)
--- errorHook _ hook env (Hooks.NotFinal, request, error) = hook env (Hooks.NotFinal, request, error)
 errorHook tls hook env (finality, request, error) = do
   hook env (finality, request, error)
   spansRef <- TLS.getTLS tls
