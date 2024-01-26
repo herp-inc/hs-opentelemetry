@@ -116,7 +116,6 @@ module OpenTelemetry.Trace.Core (
   A.FromPrimitiveAttribute (..),
   A.Key,
   A.Attributes,
-  makeCodeAttributes,
 
   -- ** Recording error information
   recordException,
