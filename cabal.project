@@ -2,6 +2,7 @@ packages:
     api
   , sdk
   , otlp
+  , examples/aws-s3
   , examples/grpc-echo
   , examples/hdbc-mysql
   , examples/http-server
@@ -12,6 +13,7 @@ packages:
   -- , exporters/jaeger
   , exporters/otlp
   -- , exporters/prometheus
+  , instrumentation/amazonka
   , instrumentation/cloudflare
   , instrumentation/conduit
   , instrumentation/grpc-haskell
@@ -77,6 +79,7 @@ allow-newer:
   , postgresql-simple:template-haskell
   , postgresql-libpq:Cabal
   , postgresql-libpq:base
+  , swagger2:base
 
 constraints:
     postgresql-simple == 0.6.4

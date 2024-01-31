@@ -4,6 +4,7 @@ packages:
 - api
 - sdk
 - otlp
+- examples/aws-s3
 # - examples/grpc-echo # only able to be built with cabal
 - examples/hdbc-mysql
 - examples/http-server
@@ -14,6 +15,7 @@ packages:
 # - exporters/jaeger
 - exporters/otlp
 # - exporters/prometheus
+- instrumentation/amazonka
 - instrumentation/cloudflare
 - instrumentation/conduit
 # - instrumentation/grpc-haskell # only able to be built with cabal
@@ -44,6 +46,12 @@ extra-deps:
 - thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
 - github: ryantm/hdbc-mysql
   commit: 80f8077b29ee27bce4141b385a8b28f42cbbbe46 # HEAD of master at 2023-12-19
+- amazonka-2.0@sha256:3481da2fda6b210d15d41c1db7a588adf68123cfb7ea3882797a6230003259db,3505
+- amazonka-core-2.0@sha256:f781ca0b5b9777f48cb1e4d611b4aad449be79bc0a1400e50fa7daf468a211f1,4566
+- amazonka-s3-2.0@sha256:e3143e11ab9e57ee0dfd9d1dd95a44c5b4a7d34af78c8f5b2e6c00afad118a02,13853
+- amazonka-sso-2.0@sha256:902be13b604e4a3b51a9b8e1adc6a32f42322ae11f738a72a8c737b2d0a91a5e,2995
+- amazonka-sts-2.0@sha256:5c721083e8d80883a893176de6105c27bbbd8176f467c27ac5f8d548a5e726d8,3209
+- crypton-0.34@sha256:9e4b50d79d1fba681befa08151db7223d2b4bb72564853e8530e614105d53a1a,14577
 
 nix:
   enable: true

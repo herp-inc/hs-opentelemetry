@@ -24,3 +24,11 @@ services:
       - MYSQL_DATABASE=test
     ports:
       - "3306:3306"
+
+  localstack:
+    image: localstack/localstack:s3-latest
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./volume:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock

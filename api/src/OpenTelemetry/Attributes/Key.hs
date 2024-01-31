@@ -47,10 +47,12 @@ module OpenTelemetry.Attributes.Key (
   -- *** HTTP
   -- $http
   http_request_body_size,
+  http_request_header,
   http_request_method,
   http_request_methodOriginal,
   http_request_resendCount,
   http_response_body_size,
+  http_response_header,
   http_response_statusCode,
   http_route,
 
@@ -78,13 +80,27 @@ module OpenTelemetry.Attributes.Key (
   -- $tbd
 
   -- *** RPC
-  -- $tbd
+  -- $rpc
+  rpc_connectRpc_errorCode,
+  rpc_connectRpc_request_metadata,
+  rpc_connectRpc_response_metadata,
+  rpc_grpc_request_metadata,
+  rpc_grpc_response_metadata,
+  rpc_grpc_statusCode,
+  rpc_jsonrpc_errorCode,
+  rpc_jsonrpc_errorMessage,
+  rpc_jsonrpc_requestId,
+  rpc_jsonrpc_version,
+  rpc_method,
+  rpc_service,
+  rpc_system,
 
   -- *** Thread
   -- $tbd
 
   -- *** URL
   -- $tbd
+  url_full,
 
   -- *** User agent
   -- $tbd
@@ -153,7 +169,8 @@ module OpenTelemetry.Attributes.Key (
   -- ** Cloud Providers
 
   -- *** AWS SDK
-  -- $tbd
+  -- $awsSdk
+  aws_requestId,
 
   -- ** CloudEvents
 
@@ -420,6 +437,11 @@ http_request_body_size :: Key Int64
 http_request_body_size = "http.request.body.size"
 
 
+-- | HTTP request headers, @key@ being the normalized HTTP Header name (lowercase), the value being the header values.
+http_request_header :: Text -> Key [Text]
+http_request_header key = Key $ "http.request.header." <> key
+
+
 -- | HTTP request method.
 http_request_method :: Key Text
 http_request_method = "http.request.method"
@@ -438,6 +460,11 @@ http_request_resendCount = "http.request.resend_count"
 -- | The size of the response payload body in bytes.
 http_response_body_size :: Key Int64
 http_response_body_size = "http.response.body.size"
+
+
+-- | HTTP response headers, @key@ being the normalized HTTP Header name (lowercase), the value being the header values.
+http_response_header :: Text -> Key [Text]
+http_response_header key = Key $ "http.response.header." <> key
 
 
 -- | [HTTP response status code](https://tools.ietf.org/html/rfc7231#section-6).
@@ -518,6 +545,83 @@ network_transport = "network.transport"
 -- | OSI network layer or non-OSI equivalent.
 network_type :: Key Text
 network_type = "network.type"
+
+
+{- $rpc
+RPC attributes are intended to be used in the context of events related to remote procedure calls (RPC).
+
+Specification: https://opentelemetry.io/docs/specs/semconv/attributes-registry/rpc/
+-}
+
+
+-- | The [error codes](https://connect.build/docs/protocol/#error-codes) of the Connect request. Error codes are always string values.
+rpc_connectRpc_errorCode :: Key Text
+rpc_connectRpc_errorCode = "rpc.connect_rpc.error_code"
+
+
+-- | Connect request metadata, @key@ being the normalized Connect Metadata key (lowercase), the value being the metadata values.
+rpc_connectRpc_request_metadata :: Text -> Key [Text]
+rpc_connectRpc_request_metadata key = Key $ "rpc.connect_rpc.request_metadata." <> key
+
+
+-- | Connect response metadata, @key@ being the normalized Connect Metadata key (lowercase), the value being the metadata values.
+rpc_connectRpc_response_metadata :: Text -> Key [Text]
+rpc_connectRpc_response_metadata key = Key $ "rpc.connect_rpc.response_metadata." <> key
+
+
+-- | gRPC request metadata, @key@ being the normalized gRPC Metadata key (lowercase), the value being the metadata values.
+rpc_grpc_request_metadata :: Text -> Key [Text]
+rpc_grpc_request_metadata key = Key $ "rpc.grpc.request_metadata." <> key
+
+
+-- | gRPC response metadata, @key@ being the normalized gRPC Metadata key (lowercase), the value being the metadata values.
+rpc_grpc_response_metadata :: Text -> Key [Text]
+rpc_grpc_response_metadata key = Key $ "rpc.grpc.response_metadata." <> key
+
+
+-- | The [numeric status code](https://github.com/grpc/grpc/blob/v1.33.2/doc/statuscodes.md) of the gRPC request.
+rpc_grpc_statusCode :: Key Int64
+rpc_grpc_statusCode = "rpc.grpc.status_code"
+
+
+-- | @error.code@ property of response if it is an error response.
+rpc_jsonrpc_errorCode :: Key Int64
+rpc_jsonrpc_errorCode = "rpc.jsonrpc.error_code"
+
+
+-- | @error.message@ property of response if it is an error response.
+rpc_jsonrpc_errorMessage :: Key Text
+rpc_jsonrpc_errorMessage = "rpc.jsonrpc.error_message"
+
+
+-- | @id@ property of request or response. Since protocol allows id to be int, string, null or missing (for notifications), value is expected to be cast to string for simplicity. Use empty string in case of null value. Omit entirely if this is a notification.
+rpc_jsonrpc_requestId :: Key Text
+rpc_jsonrpc_requestId = "rpc.jsonrpc.request_id"
+
+
+-- | Protocol version as in @jsonrpc@ property of request/response. Sinse JSON-RPC 1.0 does not specify this, the value can be omitted.
+rpc_jsonrpc_version :: Key Text
+rpc_jsonrpc_version = "rpc.jsonrpc.version"
+
+
+-- | The name of the (logical) method being called, must be equal to the $method part in the span name.
+rpc_method :: Key Text
+rpc_method = "rpc.method"
+
+
+-- | The full (logical) name of the service being called, including its package name, if applicable.
+rpc_service :: Key Text
+rpc_service = "rpc.service"
+
+
+-- | A string identifying the remoting system. See below for a list of well-known identifiers.
+rpc_system :: Key Text
+rpc_system = "rpc.system"
+
+
+-- | Absolute URL describing a network resource according to [RFC3986](https://www.rfc-editor.org/rfc/rfc3986).
+url_full :: Key Text
+url_full = "url.full"
 
 
 {- $generalAttributes
@@ -746,6 +850,21 @@ Recommended.
 -}
 opentracing_refType :: Key Text
 opentracing_refType = "opentracing.ref_type"
+
+
+{- $awsSdk
+This document defines semantic conventions to apply when instrumenting the AWS SDK. They map request or response parameters in AWS SDK API calls to attributes on a Span. The conventions have been collected over time based on feedback from AWS users of tracing and will continue to increase as new interesting conventions are found.
+
+Specification: https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
+-}
+
+
+{- | The AWS request ID as returned in the response headers @x-amz-request-id@ or @x-amz-requestid@.
+
+Recomended.
+-}
+aws_requestId :: Key Text
+aws_requestId = "aws.request_id"
 
 
 {- $databaseClientCalls
