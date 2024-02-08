@@ -41,4 +41,6 @@ executable aws-s3-example
                  conduit,
                  hs-opentelemetry-api,
                  hs-opentelemetry-instrumentation-amazonka,
+                 hs-opentelemetry-instrumentation-http-client,
                  hs-opentelemetry-sdk,
+                 http-client,

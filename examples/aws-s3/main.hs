@@ -15,7 +15,9 @@ import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as BS
 import GHC.Stack (HasCallStack)
+import qualified Network.HTTP.Client as HTTP
 import OpenTelemetry.Instrumentation.Amazonka
+import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Trace (
   defaultSpanArguments,
   inSpan,
@@ -35,7 +37,8 @@ main =
     $ \tracerProvider -> runResourceT $ do
       let tracer = makeTracer tracerProvider "aws-s3-example" tracerOptions
       bytes <- inSpan tracer "main" defaultSpanArguments $ do
-        awsEnv@Amazonka.Env {Amazonka.Env.overrides} <- Amazonka.newEnv Amazonka.discover
+        httpClient <- liftIO . HTTP.newManager =<< appendModifierToSettings tracerProvider HTTP.defaultManagerSettings
+        awsEnv@Amazonka.Env {Amazonka.Env.overrides} <- Amazonka.discover =<< Amazonka.newEnvNoAuthFromManager httpClient
         awsEnv' <- appendHooksToEnv tracerProvider awsEnv
         let awsEnv'' = awsEnv' {Amazonka.Env.overrides = overridesServiceForLocalstack . overrides}
         Amazonka.S3.GetObject.GetObjectResponse' {Amazonka.S3.GetObject.body = responseBody} <-
