@@ -19,11 +19,10 @@ jobs:
       - uses: actions/cache/restore@v4
         id: cache
         env:
-          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
+          key: ${{ runner.os }}-ghc-8.10-stack-${{ steps.setup.outputs.stack-version }}
         with:
           path: |
-            $${{ steps.setup.outputs.stack-root }}
-            ~/.stack
+            ${{ steps.setup.outputs.stack-root }}
             .stack-work
           key: ${{ env.key }}-${{ hashFiles('stack-ghc-8.10.yaml.lock') }}
           restore-keys: ${{ env.key }}-
@@ -33,7 +32,6 @@ jobs:
         with:
           path: |
             ${{ steps.setup.outputs.stack-root }}
-            ~/.stack
             .stack-work
           key: ${{ steps.cache.outputs.cache-primary-key }}
       - run: stack --stack-yaml stack-ghc-8.10.yaml build
@@ -56,11 +54,10 @@ jobs:
       - uses: actions/cache/restore@v4
         id: cache
         env:
-          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
+          key: ${{ runner.os }}-ghc-9.0-stack-${{ steps.setup.outputs.stack-version }}
         with:
           path: |
             ${{ steps.setup.outputs.stack-root }}
-            ~/.stack
             .stack-work
           key: ${{ env.key }}-${{ hashFiles('stack-ghc-9.0.yaml.lock') }}
           restore-keys: ${{ env.key }}-
@@ -70,7 +67,6 @@ jobs:
         with:
           path: |
             ${{ steps.setup.outputs.stack-root }}
-            ~/.stack
             .stack-work
           key: ${{ steps.cache.outputs.cache-primary-key }}
       - run: stack build
@@ -93,11 +89,10 @@ jobs:
       - uses: actions/cache/restore@v4
         id: cache
         env:
-          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
+          key: ${{ runner.os }}-ghc-9.2-stack-${{ steps.setup.outputs.stack-version }}
         with:
           path: |
             ${{ steps.setup.outputs.stack-root }}
-            ~/.stack
             .stack-work
           key: ${{ env.key }}-${{ hashFiles('stack-ghc-9.2.yaml.lock') }}
           restore-keys: ${{ env.key }}-
@@ -107,7 +102,6 @@ jobs:
         with:
           path: |
             ${{ steps.setup.outputs.stack-root }}
-            ~/.stack
             .stack-work
           key: ${{ steps.cache.outputs.cache-primary-key }}
       - run: stack --stack-yaml stack-ghc-9.2.yaml build
