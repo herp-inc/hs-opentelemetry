@@ -10,19 +10,32 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-22.11
       - uses: haskell-actions/setup@v2
+        id: setup
         with:
           enable-stack: true
       - if: ${{ runner.os == 'Linux' }}
         # https://github.com/actions/runner-images/issues/7061
         run: sudo chown -R $USER /usr/local/.ghcup
-      - uses: actions/cache@v3
+      - uses: actions/cache/restore@v4
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
         with:
           path: |
+            $${{ steps.setup.outputs.stack-root }}
             ~/.stack
             .stack-work
-          key: stack-${{ runner.os }}-8.10-${{ hashFiles('stack-ghc-8.10.yaml.lock') }}-2
-          restore-keys: |
+          key: ${{ env.key }}-${{ hashFiles('stack-ghc-8.10.yaml.lock') }}
+          restore-keys: ${{ env.key }}-
       - run: stack --stack-yaml stack-ghc-8.10.yaml build --only-dependencies
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ${{ steps.setup.outputs.stack-root }}
+            ~/.stack
+            .stack-work
+          key: ${{ steps.cache.outputs.cache-primary-key }}
       - run: stack --stack-yaml stack-ghc-8.10.yaml build
       - run: stack --stack-yaml stack-ghc-8.10.yaml test
       - run: stack --stack-yaml stack-ghc-8.10.yaml bench --no-run-benchmarks
@@ -34,19 +47,32 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-22.11
       - uses: haskell-actions/setup@v2
+        id: setup
         with:
           enable-stack: true
       - if: ${{ runner.os == 'Linux' }}
         # https://github.com/actions/runner-images/issues/7061
         run: sudo chown -R $USER /usr/local/.ghcup
-      - uses: actions/cache@v3
+      - uses: actions/cache/restore@v4
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
         with:
           path: |
+            ${{ steps.setup.outputs.stack-root }}
             ~/.stack
             .stack-work
-          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml.lock') }}-2
-          restore-keys: |
+          key: ${{ env.key }}-${{ hashFiles('stack-ghc-9.0.yaml.lock') }}
+          restore-keys: ${{ env.key }}-
       - run: stack build --only-dependencies
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ${{ steps.setup.outputs.stack-root }}
+            ~/.stack
+            .stack-work
+          key: ${{ steps.cache.outputs.cache-primary-key }}
       - run: stack build
       - run: stack test
       - run: stack bench --no-run-benchmarks
@@ -58,19 +84,32 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-22.11
       - uses: haskell-actions/setup@v2
+        id: setup
         with:
           enable-stack: true
       - if: ${{ runner.os == 'Linux' }}
         # https://github.com/actions/runner-images/issues/7061
         run: sudo chown -R $USER /usr/local/.ghcup
-      - uses: actions/cache@v3
+      - uses: actions/cache/restore@v4
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
         with:
           path: |
+            ${{ steps.setup.outputs.stack-root }}
             ~/.stack
             .stack-work
-          key: stack-${{ runner.os }}-9.2-${{ hashFiles('stack-ghc-9.2.yaml.lock') }}-2
-          restore-keys: |
+          key: ${{ env.key }}-${{ hashFiles('stack-ghc-9.2.yaml.lock') }}
+          restore-keys: ${{ env.key }}-
       - run: stack --stack-yaml stack-ghc-9.2.yaml build --only-dependencies
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ${{ steps.setup.outputs.stack-root }}
+            ~/.stack
+            .stack-work
+          key: ${{ steps.cache.outputs.cache-primary-key }}
       - run: stack --stack-yaml stack-ghc-9.2.yaml build
       - run: stack --stack-yaml stack-ghc-9.2.yaml test
       - run: stack --stack-yaml stack-ghc-9.2.yaml bench --no-run-benchmarks
@@ -78,15 +117,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v25
         with:
           nix_path: nixpkgs=channel:nixos-22.11
-      - uses: actions/cache@v3
+      - uses: actions/cache/restore@v4
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-9.0-nixos-22.11
         with:
           path: ~/.cabal
-          key: cabal-${{ runner.os }}-9.0-${{ hashFiles('cabal.project.freeze') }}
+          key: ${{ env.key }}-${{ hashFiles('cabal.project.freeze') }}
+          restore-keys: ${{ env.key }}-
       - run: nix develop --command cabal update
       - run: nix develop --command cabal v2-build --only-dependencies all
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cabal
+          key: ${{ steps.cache.outputs.cache-primary-key }}
       - run: nix develop --command cabal v2-build all
       - run: nix develop --command cabal v2-test all
       - run: nix develop --command cabal v2-build --enable-benchmarks all
@@ -94,6 +142,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: fourmolu/fourmolu-action@v9
+      - uses: haskell-actions/run-fourmolu@v10
         with:
           version: "0.13.1.0"
