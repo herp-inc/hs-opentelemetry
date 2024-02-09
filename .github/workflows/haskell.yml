@@ -27,7 +27,7 @@ jobs:
             .stack-work
           key: ${{ env.key }}-${{ hashFiles('stack-ghc-8.10.yaml.lock') }}
           restore-keys: ${{ env.key }}-
-      - run: stack --stack-yaml stack-ghc-8.10.yaml build --only-dependencies
+      - run: stack --stack-yaml stack-ghc-8.10.yaml build --test --no-run-tests --bench --no-run-benchmarks --only-dependencies
       - uses: actions/cache/save@v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
@@ -64,7 +64,7 @@ jobs:
             .stack-work
           key: ${{ env.key }}-${{ hashFiles('stack-ghc-9.0.yaml.lock') }}
           restore-keys: ${{ env.key }}-
-      - run: stack build --only-dependencies
+      - run: stack build --test --no-run-tests --bench --no-run-benchmarks --only-dependencies
       - uses: actions/cache/save@v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
@@ -101,7 +101,7 @@ jobs:
             .stack-work
           key: ${{ env.key }}-${{ hashFiles('stack-ghc-9.2.yaml.lock') }}
           restore-keys: ${{ env.key }}-
-      - run: stack --stack-yaml stack-ghc-9.2.yaml build --only-dependencies
+      - run: stack --stack-yaml stack-ghc-9.2.yaml build --test --no-run-tests --bench --no-run-benchmarks --only-dependencies
       - uses: actions/cache/save@v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
@@ -129,7 +129,7 @@ jobs:
           key: ${{ env.key }}-${{ hashFiles('cabal.project.freeze') }}
           restore-keys: ${{ env.key }}-
       - run: nix develop --command cabal update
-      - run: nix develop --command cabal v2-build --only-dependencies all
+      - run: nix develop --command cabal v2-build --enable-tests --enable-benchmarks --only-dependencies all
       - uses: actions/cache/save@v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
