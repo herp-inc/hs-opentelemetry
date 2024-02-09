@@ -59,7 +59,7 @@ jobs:
           path: |
             ${{ steps.setup.outputs.stack-root }}
             .stack-work
-          key: ${{ env.key }}-${{ hashFiles('stack-ghc-9.0.yaml.lock') }}
+          key: ${{ env.key }}-${{ hashFiles('stack.yaml.lock') }}
           restore-keys: ${{ env.key }}-
       - run: stack build --test --no-run-tests --bench --no-run-benchmarks --only-dependencies
       - uses: actions/cache/save@v4
