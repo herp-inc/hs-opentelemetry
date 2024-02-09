@@ -20,9 +20,7 @@ library
   autogen-modules: Paths_hs_opentelemetry_instrumentation_amazonka
   build-depends: hs-opentelemetry-api,
                  amazonka >= 2,
-                 case-insensitive,
                  http-client,
-                 http-types,
                  text,
                  thread-local-storage,
                  unordered-containers

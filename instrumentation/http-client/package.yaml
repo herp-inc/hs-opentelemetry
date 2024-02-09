@@ -21,24 +21,16 @@ description:         Please see the README on GitHub at <https://github.com/iand
 dependencies:
 - base >= 4.7 && < 5
 - case-insensitive
-- conduit
-- http-client
-- http-client-tls
-- http-conduit
-- http-types
 - hs-opentelemetry-api == 0.1.*
+- http-client
+- http-types
 - text
-- bytestring
-- unliftio
-- aeson
-- hs-opentelemetry-instrumentation-conduit >= 0.0.1 && < 0.2
-- unordered-containers
-- network
-- data-default-class
+- thread-local-storage
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  generated-other-modules: Paths_hs_opentelemetry_instrumentation_http_client
 
 tests:
   hs-opentelemetry-instrumentation-http-client-test:
