@@ -37,9 +37,7 @@ library
       base >=4.7 && <5
     , containers
     , hs-opentelemetry-api ==0.1.*
-    , hs-opentelemetry-instrumentation-wai >=0.0.1 && <0.2
     , microlens
-    , mtl
     , template-haskell
     , text
     , unliftio
@@ -61,10 +59,8 @@ test-suite hs-opentelemetry-instrumentation-yesod-test
       base >=4.7 && <5
     , containers
     , hs-opentelemetry-api ==0.1.*
-    , hs-opentelemetry-instrumentation-wai >=0.0.1 && <0.2
     , hs-opentelemetry-instrumentation-yesod
     , microlens
-    , mtl
     , template-haskell
     , text
     , unliftio
