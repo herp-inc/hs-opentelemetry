@@ -17,7 +17,7 @@
             haskell.compiler.${compiler}
             cabal-install
             pkgs2311.stack
-            hpack
+            pkgs2311.hpack
 
             pkgs2311.haskell.packages.ghc96.implicit-hie
             haskell.packages.${compiler}.haskell-language-server
