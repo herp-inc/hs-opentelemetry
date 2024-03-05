@@ -20,16 +20,15 @@ common common
   default-language: Haskell2010
 
 custom-setup
-  setup-depends:
-    aeson,
-    base,
-    Cabal,
-    Glob,
-    directory,
-    filepath,
-    yaml,
-    text,
-    vector
+  setup-depends: aeson >= 2.0,
+                 base,
+                 Cabal,
+                 Glob,
+                 directory,
+                 filepath,
+                 yaml,
+                 text,
+                 vector
 
 library
   import: common
