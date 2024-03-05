@@ -1,9 +1,16 @@
 cabal-version: 2.4
 
-name: hs-opentelemetry-instrumentation-amazonka
-version: 0.0.0.0
+name: hs-opentelemetry-semantic-conventions
+version: 1.24.0.0
 author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
+synopsis: OpenTelemetry Semantic Conventions for Haskell
+description:
+  OpenTelemetry Semantic Conventions for Haskell is a library that is automatically generated
+  based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.24.
+
+  This module's version A.B.X.Y means that A.B is the version of the original semantic-conventions,
+  and X.Y is the version of this module.
 
 common common
   build-depends: base >= 4 && < 5
@@ -12,19 +19,25 @@ common common
     ghc-options: -Wcompat
   default-language: Haskell2010
 
+custom-setup
+  setup-depends:
+    aeson,
+    base,
+    Cabal,
+    Glob,
+    directory,
+    filepath,
+    yaml,
+    text,
+    vector
+
 library
   import: common
-  hs-source-dirs: src
-  exposed-modules: OpenTelemetry.Instrumentation.Amazonka
-  other-modules: Paths_hs_opentelemetry_instrumentation_amazonka
-  autogen-modules: Paths_hs_opentelemetry_instrumentation_amazonka
+  hs-source-dirs: gen
+  exposed-modules: OpenTelemetry.SemanticConventions
+  autogen-modules: OpenTelemetry.SemanticConventions
   build-depends: hs-opentelemetry-api,
-                 hs-opentelemetry-semantic-conventions,
-                 amazonka >= 2,
-                 http-client,
                  text,
-                 thread-local-storage,
-                 unordered-containers
   ghc-options: -Wno-name-shadowing
   if impl(ghc >= 6.4)
     ghc-options: -Wincomplete-record-updates
@@ -50,20 +63,6 @@ library
   if impl(ghc >= 9.0)
     ghc-options: -Winvalid-haddock
   if impl(ghc >= 9.2)
-    ghc-options: -Wambiguous-fields
-                 -Wmissing-kind-signatures
+    ghc-options: -Wmissing-kind-signatures
                  -Woperator-whitespace
                  -Wredundant-bang-patterns
-  if impl(ghc >= 9.4)
-    ghc-options: -Wredundant-strictness-flags
-                 -Wforall-identifier
-                 -Woperator-whitespace-ext-conflict
-  if impl(ghc >= 9.4.1)
-    ghc-options: -Wgadt-mono-local-binds
-                 -Wtype-equality-out-of-scope
-                 -Wtype-equality-requires-operators
-  if impl(ghc >= 9.6.1)
-    -- ghc-options: -Wloopy-superclass-solve
-    -- Bug: https://gitlab.haskell.org/ghc/ghc/-/issues/24071
-  if impl(ghc >= 9.8.1)
-    ghc-options: -Wincomplete-export-warnings

@@ -4,6 +4,7 @@ packages:
 - api
 - sdk
 - otlp
+- semantic-conventions
 - examples/aws-s3
 # - examples/grpc-echo # only able to be built with cabal
 - examples/hdbc-mysql

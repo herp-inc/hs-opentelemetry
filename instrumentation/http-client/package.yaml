@@ -22,6 +22,7 @@ dependencies:
 - base >= 4.7 && < 5
 - case-insensitive
 - hs-opentelemetry-api == 0.1.*
+- hs-opentelemetry-semantic-conventions
 - http-client
 - http-types
 - text

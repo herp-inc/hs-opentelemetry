@@ -37,6 +37,7 @@ library
       base >=4.7 && <5
     , case-insensitive
     , hs-opentelemetry-api ==0.1.*
+    , hs-opentelemetry-semantic-conventions
     , http-client
     , http-types
     , text
@@ -58,6 +59,7 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
     , case-insensitive
     , hs-opentelemetry-api ==0.1.*
     , hs-opentelemetry-instrumentation-http-client
+    , hs-opentelemetry-semantic-conventions
     , http-client
     , http-types
     , text
