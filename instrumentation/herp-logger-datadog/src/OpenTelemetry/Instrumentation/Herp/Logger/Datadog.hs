@@ -73,6 +73,7 @@ import qualified OpenTelemetry.Attributes.Map as Otel
 import qualified OpenTelemetry.Context as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.Resource as Otel
+import qualified OpenTelemetry.SemanticConventions as Otel
 import qualified OpenTelemetry.Trace.Core as Otel
 import qualified OpenTelemetry.Vendor.Datadog as Datadog
 

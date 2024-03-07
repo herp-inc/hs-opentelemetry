@@ -18,6 +18,7 @@ library
   exposed-modules: OpenTelemetry.Instrumentation.HDBC.MySQL
   build-depends: hs-opentelemetry-api,
                  hs-opentelemetry-instrumentation-HDBC,
+                 hs-opentelemetry-semantic-conventions,
                  HDBC-mysql,
                  text,
   ghc-options: -Wno-name-shadowing

@@ -23,10 +23,10 @@ import Data.Version (showVersion)
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified Network.HTTP.Client as Orig
 import qualified Network.HTTP.Types.Status as HT
-import qualified OpenTelemetry.Attributes.Key as Otel
 import qualified OpenTelemetry.Attributes.Map as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.Propagator as Otel
+import qualified OpenTelemetry.SemanticConventions as Otel
 import qualified OpenTelemetry.Trace.Core as Otel
 import Paths_hs_opentelemetry_instrumentation_http_client (version)
 

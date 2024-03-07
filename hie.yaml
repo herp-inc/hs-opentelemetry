@@ -16,6 +16,20 @@ cradle:
               - "-package base"
               - "-package Cabal"
               - "-package filepath"
+    - path: "semantic-conventions/Setup.hs"
+      config:
+        cradle:
+          direct:
+            arguments:
+              - "-package aeson"
+              - "-package base"
+              - "-package Cabal"
+              - "-package Glob"
+              - "-package directory"
+              - "-package filepath"
+              - "-package yaml"
+              - "-package text"
+              - "-package vector"
     - path: .
       config:
         cradle:
@@ -199,6 +213,9 @@ cradle:
 
             - path: "sdk/test"
               component: "hs-opentelemetry-sdk:test:hs-opentelemetry-sdk-test"
+
+            - path: "semantic-conventions/gen"
+              component: "lib:hs-opentelemetry-semantic-conventions"
 
             - path: "utils/exceptions/src"
               component: "lib:hs-opentelemetry-utils-exceptions"

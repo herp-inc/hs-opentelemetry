@@ -40,6 +40,7 @@ import GHC.Generics (Generic)
 import GHC.Stack (withFrozenCallStack)
 import qualified OpenTelemetry.Attributes as Attr
 import qualified OpenTelemetry.Attributes.Map as Attr
+import qualified OpenTelemetry.SemanticConventions as Attr
 import qualified OpenTelemetry.Trace.Core as Otel
 
 

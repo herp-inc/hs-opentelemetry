@@ -17,6 +17,7 @@ library
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.Instrumentation.Herp.Logger.Datadog
   build-depends: hs-opentelemetry-api,
+                 hs-opentelemetry-semantic-conventions,
                  hs-opentelemetry-vendor-datadog,
                  aeson,
                  herp-logger,

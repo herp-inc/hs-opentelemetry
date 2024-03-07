@@ -11,9 +11,9 @@ module OpenTelemetry.Instrumentation.HDBC.MySQL (
 
 import qualified Data.Text as Text
 import qualified Database.HDBC.MySQL as Orig
-import qualified OpenTelemetry.Attributes as Attr
 import qualified OpenTelemetry.Attributes.Map as Attr
 import qualified OpenTelemetry.Instrumentation.HDBC as Otel
+import qualified OpenTelemetry.SemanticConventions as Attr
 import qualified OpenTelemetry.Trace.Core as Otel
 
 

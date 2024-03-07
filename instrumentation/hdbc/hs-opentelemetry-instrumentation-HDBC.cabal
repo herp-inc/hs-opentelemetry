@@ -17,6 +17,7 @@ library
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.Instrumentation.HDBC
   build-depends: hs-opentelemetry-api,
+                 hs-opentelemetry-semantic-conventions,
                  HDBC,
                  data-default-class,
                  text

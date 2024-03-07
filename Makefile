@@ -1,9 +1,5 @@
 .PHONY: all
-all: all.stack-8.10 all.stack-9.0 all.stack-9.2 all.cabal-9.0
-
-.PHONY: all.stack-8.10
-all.stack-8.10:
-	stack --stack-yaml stack-ghc-8.10.yaml build --test --bench
+all: all.stack-9.0 all.stack-9.2 all.cabal-9.0
 
 .PHONY: all.stack-9.0
 all.stack-9.0:
@@ -19,11 +15,7 @@ all.cabal-9.0:
 	cabal v2-test --jobs all
 
 .PHONY: build.all
-build.all: build.all.stack-8.10 build.all.stack-9.0 build.all.stack-9.2 build.all.cabal-9.0
-
-.PHONY: build.all.stack-8.10
-build.all.stack-8.10:
-	stack --stack-yaml stack-ghc-8.10.yaml build --test --no-run-tests --bench --no-run-benchmarks
+build.all: build.all.stack-9.0 build.all.stack-9.2 build.all.cabal-9.0
 
 .PHONY: build.all.stack-9.0
 build.all.stack-9.0:
