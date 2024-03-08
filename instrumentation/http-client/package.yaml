@@ -18,20 +18,23 @@ extra-source-files:
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/http-client#readme>
 
+ghc-options: -Wunused-packages
+
 dependencies:
 - base >= 4.7 && < 5
-- case-insensitive
-- hs-opentelemetry-api == 0.1.*
-- hs-opentelemetry-semantic-conventions
-- http-client
-- http-types
-- text
-- thread-local-storage
 
 library:
   ghc-options: -Wall
   source-dirs: src
   generated-other-modules: Paths_hs_opentelemetry_instrumentation_http_client
+  dependencies:
+  - case-insensitive
+  - hs-opentelemetry-api == 0.1.*
+  - hs-opentelemetry-semantic-conventions
+  - http-client
+  - http-types
+  - text
+  - thread-local-storage
 
 tests:
   hs-opentelemetry-instrumentation-http-client-test:
@@ -41,5 +44,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-http-client

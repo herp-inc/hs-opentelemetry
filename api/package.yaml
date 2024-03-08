@@ -21,30 +21,15 @@ default-extensions:
 - OverloadedStrings
 - RecordWildCards
 
+ghc-options: -Wunused-packages
+
 dependencies:
 - base >= 4.7 && < 5
-- async
-- bytestring
-- text
-- vault
-- containers
-- hashable
-- thread-utils-context == 0.2.*
-- unordered-containers
-- binary
-- vector
-- clock
-- memory
 - mtl
-- transformers
-- http-types
-- attoparsec
-- template-haskell
-- charset
-- ghc-prim
 - unliftio-core
+- unordered-containers
+- vector
 - vector-builder
-- data-default-class
 
 library:
   source-dirs: src
@@ -52,6 +37,21 @@ library:
   other-modules:
   - OpenTelemetry.Context.Types
   - OpenTelemetry.Internal.Trace.Types
+  dependencies:
+  - async
+  - attoparsec
+  - binary
+  - bytestring
+  - charset
+  - clock
+  - data-default-class
+  - hashable
+  - http-types
+  - memory
+  - template-haskell
+  - text
+  - thread-utils-context == 0.2.*
+  - vault
 
 tests:
   hs-opentelemetry-api-test:
@@ -62,7 +62,7 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hspec
     - hs-opentelemetry-api
+    - hspec
     - vector
     - vector-builder

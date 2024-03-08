@@ -64,7 +64,6 @@ test-suite spec
                  Raw
                  String
   build-depends: hs-opentelemetry-propagator-datadog,
-                 hs-opentelemetry-api,
                  bytestring,
                  hspec,
                  pretty-hex,

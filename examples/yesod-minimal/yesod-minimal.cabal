@@ -1,50 +1,12 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
 name:           yesod-minimal
 version:        0.0.0
 build-type:     Simple
-
-library
-  exposed-modules:
-      Minimal
-  other-modules:
-      Paths_yesod_minimal
-  hs-source-dirs:
-      src
-  build-depends:
-      base
-    , bytestring
-    , conduit
-    , hs-opentelemetry-exporter-handle
-    , hs-opentelemetry-exporter-otlp
-    , hs-opentelemetry-instrumentation-http-client
-    , hs-opentelemetry-instrumentation-persistent
-    , hs-opentelemetry-instrumentation-postgresql-simple
-    , hs-opentelemetry-instrumentation-wai
-    , hs-opentelemetry-instrumentation-yesod
-    , hs-opentelemetry-propagator-w3c
-    , hs-opentelemetry-sdk
-    , http-client
-    , http-types
-    , microlens
-    , monad-logger
-    , persistent >=2.13.3
-    , persistent-postgresql >=2.13.4
-    , persistent-qq
-    , resource-pool
-    , text
-    , unliftio
-    , vault
-    , wai
-    , warp
-    , yesod-core
-    , yesod-form
-    , yesod-persistent
-  default-language: Haskell2010
 
 executable yesod-minimal
   main-is: Minimal.hs
@@ -57,7 +19,6 @@ executable yesod-minimal
       base
     , bytestring
     , conduit
-    , hs-opentelemetry-exporter-handle
     , hs-opentelemetry-exporter-otlp
     , hs-opentelemetry-instrumentation-http-client
     , hs-opentelemetry-instrumentation-persistent
@@ -80,7 +41,5 @@ executable yesod-minimal
     , wai
     , warp
     , yesod-core
-    , yesod-form
-    , yesod-minimal
     , yesod-persistent
   default-language: Haskell2010

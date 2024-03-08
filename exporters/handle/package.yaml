@@ -19,13 +19,16 @@ extra-source-files:
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/handle#readme>
 
+ghc-options: -Wunused-packages
+
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api >= 0.0.3 && < 0.2
-- text
 
 library:
   source-dirs: src
+  dependencies:
+  - hs-opentelemetry-api >= 0.0.3 && < 0.2
+  - text
 
 tests:
   hs-opentelemetry-exporter-handle-test:
@@ -35,5 +38,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-exporter-handle

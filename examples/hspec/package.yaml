@@ -1,5 +1,7 @@
 name: hspec-example
 
+ghc-options: -Wunused-packages
+
 dependencies:
 # minimal example dependencies
 - base

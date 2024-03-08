@@ -18,22 +18,25 @@ category:            OpenTelemetry, Web
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/yesod#readme>
 
+ghc-options: -Wunused-packages
+
 dependencies:
 - base >= 4.7 && < 5
-- containers
-- microlens
-- yesod-core
-- hs-opentelemetry-api == 0.1.*
-- unliftio
-- text
-- template-haskell
-- vault
-- wai
-- unordered-containers
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - containers
+  - microlens
+  - yesod-core
+  - hs-opentelemetry-api == 0.1.*
+  - unliftio
+  - text
+  - template-haskell
+  - vault
+  - wai
+  - unordered-containers
 
 tests:
   hs-opentelemetry-instrumentation-yesod-test:
@@ -43,5 +46,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-yesod

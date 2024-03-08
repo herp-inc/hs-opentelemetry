@@ -19,31 +19,12 @@ category:            OpenTelemetry, Telemetry, Monitoring, Observability, Metric
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/sdk#readme>
 
+ghc-options: -Wunused-packages
+
 dependencies:
 - base >= 4.7 && < 5
-- bytestring
-- text
-# These are "distribution" packages
 - hs-opentelemetry-api >= 0.0.3 && < 0.2
-- hs-opentelemetry-propagator-w3c == 0.0.1.*
-- hs-opentelemetry-exporter-otlp == 0.0.1.*
-- hs-opentelemetry-propagator-b3 ==0.0.1.*
-
-- async
-- vector
-- stm
-- unagi-chan
-- unordered-containers
-- vector-builder
-- http-types
-- network-bsd
-- unix
-- transformers
-# todo get rid of this when enough of the ecosystem has upgraded
-- random
-- mwc-random
-- random-bytestring
-- data-default-class
+- text
 
 library:
   ghc-options: -Wall
@@ -72,15 +53,30 @@ library:
     - OpenTelemetry.Resource.Service
     - OpenTelemetry.Resource.Telemetry
     - OpenTelemetry.Resource.Webengine
-    # - OpenTelemetry.Trace
     - OpenTelemetry.Trace.Id
-    # - OpenTelemetry.Trace.IdGenerator
     - OpenTelemetry.Trace.Monad
     - OpenTelemetry.Trace.Sampler
     - OpenTelemetry.Trace.TraceState
     - OpenTelemetry.Util
   other-modules:
   - Paths_hs_opentelemetry_sdk
+  dependencies:
+  - async
+  - bytestring
+  - data-default-class
+  - hs-opentelemetry-exporter-otlp == 0.0.1.*
+  - hs-opentelemetry-propagator-b3 ==0.0.1.*
+  - hs-opentelemetry-propagator-w3c == 0.0.1.*
+  - http-types
+  - mwc-random
+  - network-bsd
+  - random
+  - stm
+  - unagi-chan
+  - unix
+  - unordered-containers
+  - vector
+  - vector-builder
 
 tests:
   hs-opentelemetry-sdk-test:

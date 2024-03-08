@@ -18,20 +18,22 @@ extra-source-files:
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/postgresql-simple#readme>
 
+ghc-options: -Wunused-packages
+
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api == 0.1.*
-- network
-- iproute
-- postgresql-simple
-- postgresql-libpq
-- text
-- bytestring
-- unliftio # todo, unliftio-core
-- unordered-containers
 
 library:
   source-dirs: src
+  dependencies:
+  - bytestring
+  - hs-opentelemetry-api == 0.1.*
+  - iproute
+  - postgresql-libpq
+  - postgresql-simple
+  - text
+  - unliftio # todo, unliftio-core
+  - unordered-containers
 
 tests:
   hs-opentelemetry-instrumentation-postgresql-simple-test:
@@ -41,5 +43,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-postgresql-simple

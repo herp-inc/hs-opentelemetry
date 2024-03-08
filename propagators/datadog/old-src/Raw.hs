@@ -139,11 +139,11 @@ showWord64BS v =
     writeWord64Ptr ptr =
       loop (19 :: Int) v 0 False
       where
-        loop 0 v offset _ = do
-          writeOffPtr ptr offset (word8ToAsciiWord8 $ fromIntegral v)
+        loop 0 v' offset _ = do
+          writeOffPtr ptr offset (word8ToAsciiWord8 $ fromIntegral v')
           pure $ offset + 1
-        loop n v offset upper = do
-          let (p, q) = v `divMod` (10 ^ n)
+        loop n v' offset upper = do
+          let (p, q) = v' `divMod` (10 ^ n)
           if p == 0 && not upper
             then loop (n - 1) q offset upper
             else do

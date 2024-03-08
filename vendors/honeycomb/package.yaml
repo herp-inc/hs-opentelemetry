@@ -44,6 +44,8 @@ ghc-options:
   # Warns on every single data declaration
   - -Wno-missing-kind-signatures
 
+ghc-options: -Wunused-packages
+
 dependencies:
 - base >= 4.7 && < 5
 - bytestring

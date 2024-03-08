@@ -19,19 +19,20 @@ category:            OpenTelemetry, Tracing, Web
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/propagators/b3#readme>
 
+ghc-options: -Wunused-packages
+
 dependencies:
-- attoparsec
 - base >=4.7 && <5
-- bytestring
-- hs-opentelemetry-api >= 0.0.3 && < 0.2
-- http-types
-- memory
-- primitive
-- text
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - attoparsec
+  - bytestring
+  - hs-opentelemetry-api >= 0.0.3 && < 0.2
+  - http-types
+  - text
 
 tests:
   hs-opentelemetry-propagator-b3-test:
@@ -41,5 +42,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-propagator-b3

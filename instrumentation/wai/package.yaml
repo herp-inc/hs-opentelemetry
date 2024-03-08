@@ -18,20 +18,22 @@ category:            OpenTelemetry, Web
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/wai#readme>
 
+ghc-options: -Wunused-packages
+
 dependencies:
 - base >= 4.7 && < 5
-- http-types
-- wai
-- hs-opentelemetry-api == 0.1.*
-- vault
-- text
-- bytestring
-- network
-- iproute
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - hs-opentelemetry-api == 0.1.*
+  - http-types
+  - iproute
+  - network
+  - text
+  - vault
+  - wai
 
 tests:
   hs-opentelemetry-instrumentation-wai-test:
@@ -41,5 +43,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-wai

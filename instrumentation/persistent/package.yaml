@@ -18,20 +18,23 @@ extra-source-files:
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/persistent#readme>
 
+ghc-options: -Wunused-packages
+
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api == 0.1.*
-- persistent >= 2.13.3
-- text
-- vault
-- resourcet
-- unliftio # TODO, unliftio-core
-- mtl
-- unordered-containers
 
 library:
   # ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - hs-opentelemetry-api == 0.1.*
+  - mtl
+  - persistent >= 2.13.3
+  - resourcet
+  - text
+  - unliftio # TODO, unliftio-core
+  - unordered-containers
+  - vault
 
 tests:
   hs-opentelemetry-persistent-test:
@@ -41,5 +44,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-persistent
