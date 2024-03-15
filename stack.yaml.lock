@@ -113,6 +113,17 @@ packages:
       size: 168
   original:
     hackage: proto-lens-runtime-0.7.0.2
+- completed:
+    name: hedis
+    pantry-tree:
+      sha256: bfb54c2ea14a915e279afff2fc2af0901427eb6fe59726cc89845fd77fea5114
+      size: 2679
+    sha256: 46e22ff83abd6134bc2b9a937bcee459d2ece3fb0e03085fd15abef50b2e5959
+    size: 79596
+    url: https://github.com/kakkun61/hedis/archive/60313d0c76392f7a00467d40c40fa5e851e0ce11.tar.gz
+    version: 0.15.2
+  original:
+    url: https://github.com/kakkun61/hedis/archive/60313d0c76392f7a00467d40c40fa5e851e0ce11.tar.gz
 snapshots:
 - completed:
     sha256: e019cd29e3f7f9dbad500225829a3f7a50f73c674614f2f452e21bb8bf5d99ea

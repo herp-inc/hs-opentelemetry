@@ -6,6 +6,7 @@ packages:
   , examples/aws-s3
   , examples/grpc-echo
   , examples/hdbc-mysql
+  , examples/hedis
   , examples/herp-logger
   , examples/hspec
   , examples/http-server
@@ -70,6 +71,12 @@ source-repository-package
     type: git
     location: https://github.com/herp-inc/herp-logger
     tag: 99ebe35339d973d6d47f1c307cb11da7ca42206e
+
+source-repository-package
+    type: git
+    location: https://github.com/informatikr/hedis
+    tag: 6a5b1f2786f30c901b88ceed15ffe6b508f450e5
+    -- requires https://github.com/informatikr/hedis/pull/223 that not yet released
 
 allow-newer:
     http-api-data:base

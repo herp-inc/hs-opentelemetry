@@ -27,6 +27,7 @@ packages:
 - examples/aws-s3
 # - examples/grpc-echo # only able to be built with cabal
 - examples/hdbc-mysql
+- examples/hedis
 - examples/hspec
 - examples/http-server
 - examples/yesod-minimal
@@ -112,6 +113,10 @@ extra-deps:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+# requires https://github.com/informatikr/hedis/pull/223 that not yet released
+- github: informatikr/hedis
+  commit: 6a5b1f2786f30c901b88ceed15ffe6b508f450e5
 
 nix:
   enable: true
