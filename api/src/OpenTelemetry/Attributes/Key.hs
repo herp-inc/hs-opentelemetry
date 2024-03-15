@@ -5,10 +5,12 @@
 Module      :  OpenTelemetry.Attributes.Key
 Copyright   :  (c) Kazuki Okamoto (岡本和樹), 2023
 License     :  BSD-3
-Description :  Key-value pair metadata used in 'OpenTelemetry.Trace.Span's, 'OpenTelemetry.Trace.Link's, and 'OpenTelemetry.Trace.Event's
+Description :  Key-value pair keys used in 'OpenTelemetry.Trace.Span's, 'OpenTelemetry.Trace.Link's, and 'OpenTelemetry.Trace.Event's
 Maintainer  :  Kazuki Okamoto (岡本和樹)
 Stability   :  experimental
 Portability :  non-portable (GHC extensions)
+
+This module is based on OpenTelemetry Semantic Conventions 1.24.0.
 -}
 module OpenTelemetry.Attributes.Key (
   Key (..),

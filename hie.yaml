@@ -55,6 +55,9 @@ cradle:
             - path: "examples/hdbc-mysql/main.hs"
               component: "hdbc-mysql-example:exe:hdbc-mysql-example"
 
+            - path: "examples/hedis/client.hs"
+              component: "hedis-example:exe:hedis-client"
+
             - path: "examples/http-server/main.hs"
               component: "http-server:exe:http-server"
 
