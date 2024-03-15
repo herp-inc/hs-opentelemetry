@@ -1,0 +1,48 @@
+cabal-version: 3.4
+
+name: hedis-example
+version: 0.0.0
+build-type: Simple
+
+common common
+  ghc-options: -threaded
+               -with-rtsopts=-N
+               -Wall
+               -Wcompat
+               -Widentities
+               -Wincomplete-record-updates
+               -Wincomplete-uni-patterns
+               -Wmissing-export-lists
+               -Wmissing-exported-signatures
+               -Wmissing-home-modules
+               -Wmissing-export-lists
+               -Wmonomorphism-restriction
+               -Wno-name-shadowing
+               -Wpartial-fields
+               -Wredundant-constraints
+               -Wunused-packages
+  if impl(ghc >= 9.0)
+    ghc-options: -Winvalid-haddock
+  if impl(ghc >= 9.2)
+    ghc-options: -Wmissing-kind-signatures
+                 -Woperator-whitespace
+                 -Wredundant-bang-patterns
+  default-language: Haskell2010
+
+executable hedis-client
+  import: common
+  main-is: client.hs
+  hs-source-dirs: .
+  build-depends: base,
+                 hedis,
+                 hs-opentelemetry-sdk,
+                 hs-opentelemetry-instrumentation-hedis
+
+executable hedis-pubsub
+  import: common
+  main-is: pubsub.hs
+  hs-source-dirs: .
+  build-depends: base,
+                 hedis,
+                 hs-opentelemetry-sdk,
+                 hs-opentelemetry-instrumentation-hedis

@@ -99,6 +99,17 @@ packages:
       size: 23275
   original:
     hackage: crypton-0.34@sha256:9e4b50d79d1fba681befa08151db7223d2b4bb72564853e8530e614105d53a1a,14577
+- completed:
+    name: hedis
+    pantry-tree:
+      sha256: 31961196203986bdf5b4b271923ad8f4f36771de9796778f5196cc518b689366
+      size: 2678
+    sha256: 867afb4d2564e0fd5d04a28166113a00ab033f6a1aaa7de5d9b3bb67c1be3baf
+    size: 79738
+    url: https://github.com/kakkun61/hedis/archive/c523b1c2de5cd9ee4f6652f37daca01a1527c2ba.tar.gz
+    version: 0.15.2
+  original:
+    url: https://github.com/kakkun61/hedis/archive/c523b1c2de5cd9ee4f6652f37daca01a1527c2ba.tar.gz
 snapshots:
 - completed:
     sha256: e7e57649a12f6178d1158e4b6f1f1885ed56d210ae6174385271cecc9b1ea974
