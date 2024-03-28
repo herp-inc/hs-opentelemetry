@@ -29,6 +29,8 @@ module OpenTelemetry.Resource (
   Resource,
   (.=),
   (.=?),
+  (.=$),
+  (.=$?),
   ResourceMerge,
   mergeResources,
 
@@ -89,6 +91,14 @@ k .= v = Just (k, toAttribute v)
 -}
 (.=?) :: (ToAttribute a) => Text -> Maybe a -> Maybe (Text, Attribute)
 k .=? mv = (\k' v -> (k', toAttribute v)) k <$> mv
+
+
+(.=$) :: (ToAttribute a) => Key a -> a -> Maybe (Text, Attribute)
+Key k .=$ v = Just (k, toAttribute v)
+
+
+(.=$?) :: (ToAttribute a) => Key a -> Maybe a -> Maybe (Text, Attribute)
+Key k .=$? mv = (\k' v -> (k', toAttribute v)) k <$> mv
 
 
 instance Semigroup (Resource s) where

@@ -16,13 +16,13 @@ library
   import: common
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.Instrumentation.Herp.Logger.Datadog
+  other-modules: Paths_hs_opentelemetry_instrumentation_herp_logger_datadog
+  autogen-modules: Paths_hs_opentelemetry_instrumentation_herp_logger_datadog
   build-depends: hs-opentelemetry-api,
                  hs-opentelemetry-semantic-conventions,
                  hs-opentelemetry-vendor-datadog,
                  aeson,
                  herp-logger,
-                 monad-logger,
-                 mtl,
                  text,
   ghc-options: -Wcompat
                -Wno-name-shadowing

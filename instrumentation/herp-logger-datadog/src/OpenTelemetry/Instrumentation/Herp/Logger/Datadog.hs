@@ -1,8 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
@@ -15,58 +13,18 @@ Datadog functionality about connections of Traces and Logs is described in
 This logger requires 'Otel.Tracer' to retrieve OpenTelemetry context additionally.
 -}
 module OpenTelemetry.Instrumentation.Herp.Logger.Datadog (
-  (Orig..=),
-  Logger (..),
-  HasLogger (..),
-  ToLogger (..),
-  Orig.LogLevel (..),
-  Orig.LoggerConfig (..),
-  newLogger,
-  withLogger,
-  makeLogger,
-  Orig.defaultLoggerConfig,
-  logM,
-  logOtherM,
-  logDebugM,
-  logInfoM,
-  logNoticeM,
-  logWarnM,
-  logErrorM,
-  logCritM,
-  logAlertM,
-  logEmergM,
-  logIO,
-  Orig.urgentLog,
-  flush,
-
-  -- * Payload
-  Orig.Payload,
-  Orig.level,
-  Orig.message,
-  Orig.object,
-  Orig.messageString,
-  Orig.messageShow,
-  Orig.messageException,
-
-  -- * monad-logger
-  runLoggingT,
-  toLoggerIO,
+  appendHooksToConfig,
 ) where
 
 import Control.Applicative (Alternative ((<|>)))
-import Control.Monad.IO.Class (MonadIO (liftIO))
-import qualified Control.Monad.Logger as ML
-import Control.Monad.Reader.Class (MonadReader (ask), asks)
+import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Aeson.KeyMap as Aeson
 import qualified Data.Aeson.Types as Aeson
 import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
-import GHC.Generics (Generic)
-import Herp.Logger ((.=))
+import Data.Version (showVersion)
 import qualified Herp.Logger as Orig
-import qualified Herp.Logger.LogLevel as Orig
 import qualified Herp.Logger.Payload as Orig
 import qualified OpenTelemetry.Attributes as Otel
 import qualified OpenTelemetry.Attributes.Map as Otel
@@ -76,123 +34,24 @@ import qualified OpenTelemetry.Resource as Otel
 import qualified OpenTelemetry.SemanticConventions as Otel
 import qualified OpenTelemetry.Trace.Core as Otel
 import qualified OpenTelemetry.Vendor.Datadog as Datadog
+import Paths_hs_opentelemetry_instrumentation_herp_logger_datadog (version)
 
 
-data Logger = Logger {original :: Orig.Logger, tracer :: Otel.Tracer} deriving stock (Generic)
+appendHooksToConfig :: Otel.TracerProvider -> Orig.LoggerConfig -> Orig.LoggerConfig
+appendHooksToConfig provider config@Orig.LoggerConfig {Orig.hooks} = config {Orig.hooks = hooks {Orig.logHook = logHook provider . Orig.logHook hooks}}
 
 
-makeLogger :: Orig.Logger -> Otel.TracerProvider -> Logger
-makeLogger original provider =
-  Logger
-    { original
-    , tracer = Otel.makeTracer provider "hs-opentelemetry-instrumentation-herp-logger-datadog" Otel.tracerOptions
-    }
-
-
-newLogger :: Orig.LoggerConfig -> Otel.TracerProvider -> IO Logger
-newLogger config provider = do
-  original <- Orig.newLogger config
-  pure $ makeLogger original provider
-
-
-withLogger :: Orig.LoggerConfig -> Otel.TracerProvider -> (Logger -> IO a) -> IO a
-withLogger config provider f =
-  Orig.withLogger config $ \original -> f $ makeLogger original provider
-
-
-class HasLogger a where
-  toLogger :: a -> Logger
-
-
-instance HasLogger Logger where
-  toLogger = id
-
-
-instance Orig.HasLogger Logger where
-  toLogger = original . toLogger
-
-
-instance Otel.HasTracer Logger where
-  tracerL f Logger {tracer, original} = (\tracer -> Logger {original, tracer}) <$> f tracer
-
-
--- | This wrapper is intended to be used with /deriving via/.
-newtype ToLogger a = ToLogger {getToLogger :: a}
-
-
-instance HasLogger a => Orig.HasLogger (ToLogger a) where
-  toLogger = original . toLogger . getToLogger
-
-
-logIO :: MonadIO m => Logger -> Orig.Payload -> m ()
-logIO Logger {original = logger, tracer} payload = do
+logHook :: Otel.TracerProvider -> (Orig.Logger -> Orig.Payload -> IO ()) -> Orig.Logger -> Orig.Payload -> IO ()
+logHook provider hook logger payload = do
+  let
+    tracer =
+      Otel.makeTracer
+        provider
+        (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-herp-logger-datadog" $ Text.pack $ showVersion version)
+        Otel.tracerOptions
   context <- Otel.getContext
   payload' <- datadogPayload (Otel.getTracerTracerProvider tracer) $ Otel.lookupSpan context
-  Orig.logIO logger (payload' <> payload)
-{-# INLINE logIO #-}
-
-
-logM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
-logM payload = do
-  logger <- toLogger <$> ask
-  logIO logger payload
-{-# INLINE logM #-}
-
-
-logOtherM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.LogLevel -> Orig.Payload -> m ()
-logOtherM logLevel payload = logM $ Orig.level logLevel <> payload
-
-
-logDebugM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
-logDebugM = logOtherM Orig.Debug
-
-
-logInfoM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
-logInfoM = logOtherM Orig.Informational
-
-
-logNoticeM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
-logNoticeM = logOtherM Orig.Notice
-
-
-logWarnM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
-logWarnM = logOtherM Orig.Warning
-
-
-logErrorM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
-logErrorM = logOtherM Orig.Error
-
-
-logCritM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
-logCritM = logOtherM Orig.Critical
-
-
-logAlertM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
-logAlertM = logOtherM Orig.Alert
-
-
-logEmergM :: (MonadIO m, MonadReader r m, HasLogger r) => Orig.Payload -> m ()
-logEmergM = logOtherM Orig.Emergency
-
-
-flush :: (MonadReader r m, HasLogger r, MonadIO m) => m ()
-flush = asks toLogger >>= liftIO . Orig.loggerFlush . original
-
-
-runLoggingT :: Logger -> ML.LoggingT m a -> m a
-runLoggingT logger (ML.LoggingT run) = run $ toLoggerIO logger
-
-
-toLoggerIO :: Logger -> ML.Loc -> ML.LogSource -> ML.LogLevel -> ML.LogStr -> IO ()
-toLoggerIO logger loc logSrc lv logStr = do
-  let msg = Text.decodeUtf8 $ ML.fromLogStr $ ML.defaultLogStr loc logSrc lv logStr
-  logIO
-    logger
-    [ Orig.message msg
-    , case Orig.convertLogLevel lv of
-        Right x -> Orig.level x
-        Left other -> [#warn, "level" .= other]
-    ]
+  hook logger $ payload' <> payload
 
 
 datadogPayload :: MonadIO m => Otel.TracerProvider -> Maybe Otel.Span -> m Orig.Payload

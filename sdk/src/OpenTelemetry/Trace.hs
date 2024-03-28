@@ -118,6 +118,7 @@ module OpenTelemetry.Trace (
   inSpan',
   updateName,
   addAttribute,
+  addAttributeByKey,
   addAttributes,
   recordException,
   setStatus,
