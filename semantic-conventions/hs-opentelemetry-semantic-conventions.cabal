@@ -12,6 +12,9 @@ description:
   This module's version A.B.X.Y means that A.B is the version of the original semantic-conventions,
   and X.Y is the version of this module.
 
+extra-source-files: model/model/**/*.yaml,
+                    model/model/**/*.yml
+
 common common
   build-depends: base >= 4 && < 5
   ghc-options: -Wall
