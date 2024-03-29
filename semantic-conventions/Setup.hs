@@ -30,6 +30,7 @@
 module Main (main) where
 
 import Control.Applicative (Alternative ((<|>)))
+import Control.Monad (when)
 import qualified Data.Aeson as Json
 import qualified Data.Aeson.KeyMap as JsonMap
 import qualified Data.Char as Char
@@ -478,6 +479,7 @@ preBuild _ _ = do
     targetDirectory = "gen/OpenTelemetry/"
     targetFile = targetDirectory </> "SemanticConventions.hs"
   yamlFiles <- Glob.globDir1 yamlPattern "."
+  when (List.null yamlFiles) $ fail "no YAML files found"
   models <-
     for yamlFiles $ \yamlFile -> do
       printLog $ "processing " ++ yamlFile
