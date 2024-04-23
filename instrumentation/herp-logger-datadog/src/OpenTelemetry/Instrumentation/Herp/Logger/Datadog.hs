@@ -14,6 +14,7 @@ This logger requires 'Otel.Tracer' to retrieve OpenTelemetry context additionall
 -}
 module OpenTelemetry.Instrumentation.Herp.Logger.Datadog (
   appendHooksToConfig,
+  datadogHooks,
 ) where
 
 import Control.Applicative (Alternative ((<|>)))
@@ -39,6 +40,10 @@ import Paths_hs_opentelemetry_instrumentation_herp_logger_datadog (version)
 
 appendHooksToConfig :: Otel.TracerProvider -> Orig.LoggerConfig -> Orig.LoggerConfig
 appendHooksToConfig provider config@Orig.LoggerConfig {Orig.hooks} = config {Orig.hooks = hooks {Orig.logHook = logHook provider . Orig.logHook hooks}}
+
+
+datadogHooks :: Otel.TracerProvider -> Orig.Hooks
+datadogHooks provider = Orig.Hooks $ logHook provider
 
 
 logHook :: Otel.TracerProvider -> (Orig.Logger -> Orig.Payload -> IO ()) -> Orig.Logger -> Orig.Payload -> IO ()
