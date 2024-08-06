@@ -50,6 +50,7 @@ module OpenTelemetry.Trace.Core (
   createTracerProvider,
   shutdownTracerProvider,
   forceFlushTracerProvider,
+  FlushResult (..),
   getTracerProviderResources,
   getTracerProviderPropagators,
   getGlobalTracerProvider,
@@ -137,6 +138,9 @@ module OpenTelemetry.Trace.Core (
   timestampNanoseconds,
   unsafeReadSpan,
   whenSpanIsRecording,
+  ownCodeAttributes,
+  callerAttributes,
+  addAttributesToSpanArguments,
 
   -- * Limits
   SpanLimits (..),
@@ -167,9 +171,11 @@ import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
+import OpenTelemetry.Internal.Common.Types
+import OpenTelemetry.Internal.Logs.Core (emitOTelLogRecord, logDroppedAttributes)
+import qualified OpenTelemetry.Internal.Logs.Types as SeverityNumber (SeverityNumber (..))
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
-import OpenTelemetry.Logging.Core (Log)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
@@ -193,39 +199,38 @@ import System.Timeout (timeout)
 
  @since 0.0.1.0
 -}
-createSpan ::
-  (MonadIO m, HasCallStack) =>
-  -- | 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
+createSpan
+  :: (MonadIO m, HasCallStack)
+  => Tracer
+  -- ^ 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
   -- used for the lifecycle of the created 'Span'
-  Tracer ->
-  -- | Context, potentially containing a parent span. If no existing parent (or context) exists,
+  -> Context
+  -- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,
   -- you can use 'OpenTelemetry.Context.empty'.
-  Context ->
-  -- | Span name
-  Text ->
-  -- | Additional span information
-  SpanArguments ->
-  -- | The created span.
-  m Span
-createSpan t c n args@SpanArguments {attributes} =
-  createSpanWithoutCallStack t c n args {attributes = H.union attributes $ makeCodeAttributes callStack}
+  -> Text
+  -- ^ Span name
+  -> SpanArguments
+  -- ^ Additional span information
+  -> m Span
+  -- ^ The created span.
+createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (args {attributes = H.union (attributes args) callerAttributes})
 
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
-createSpanWithoutCallStack ::
-  (MonadIO m) =>
-  -- | 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
+createSpanWithoutCallStack
+  :: (MonadIO m)
+  => Tracer
+  -- ^ 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
   -- used for the lifecycle of the created 'Span'
-  Tracer ->
-  -- | Context, potentially containing a parent span. If no existing parent (or context) exists,
+  -> Context
+  -- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,
   -- you can use 'OpenTelemetry.Context.empty'.
-  Context ->
-  -- | Span name
-  Text ->
-  -- | Additional span information
-  SpanArguments ->
-  -- | The created span.
-  m Span
+  -> Text
+  -- ^ Span name
+  -> SpanArguments
+  -- ^ Additional span information
+  -> m Span
+  -- ^ The created span.
 createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
   sId <- newSpanId $ tracerProviderIdGenerator $ tracerProvider t
   let parent = lookupSpan ctxt
@@ -280,17 +285,20 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                           (H.unions [additionalInfo, attrs, attributes])
                     , spanLinks =
                         let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
-                         in frozenBoundedCollection limitedLinks $ fmap freezeLink links
+                        in frozenBoundedCollection limitedLinks $ fmap freezeLink links
                     , spanEvents = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (eventCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                     , spanStatus = Unset
                     , spanStart = st
                     , spanEnd = Nothing
                     , spanTracer = t
                     }
+
+            when (A.attributesDropped (spanAttributes is) > 0) $ void logDroppedAttributes
+
             s <- newIORef is
-            eResult <- try $ mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
+            eResult <- try $ mapM_ (\processor -> spanProcessorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
             case eResult of
-              Left err -> print (err :: SomeException)
+              Left err -> void $ emitOTelLogRecord H.empty SeverityNumber.Error $ T.pack $ show (err :: SomeException)
               Right _ -> pure ()
             pure $ Span s
 
@@ -307,61 +315,98 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
         }
 
 
+ownCodeAttributes :: (HasCallStack) => H.HashMap Text A.Attribute
+ownCodeAttributes = case getCallStack callStack of
+  -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
+  -- and look one further step up for our own code.
+  (("ownCodeAttributes", _) : ownCode : _) -> srcAttributes ownCode
+  -- The call stack doesn't look like we expect, potentially frozen or empty. In this case we can't
+  -- really do much, so give up.
+  _ -> mempty
+
+
+callerAttributes :: (HasCallStack) => H.HashMap Text A.Attribute
+callerAttributes = case getCallStack callStack of
+  -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
+  -- and look two further steps up for the caller.
+  (("callerAttributes", _) : _ : caller : _) -> srcAttributes caller
+  -- The call stack doesn't look like we expect. Guess that it got frozen, and so the most
+  -- useful thing to do is to assume that the "caller" is the top of the frozen call stack
+  (caller : _) -> srcAttributes caller
+  -- Empty call stack
+  _ -> mempty
+
+
+srcAttributes :: (String, SrcLoc) -> H.HashMap Text A.Attribute
+srcAttributes (fn, loc) =
+  H.fromList
+    [ ("code.function", A.toAttribute $ T.pack fn)
+    , ("code.namespace", A.toAttribute $ T.pack $ srcLocModule loc)
+    , ("code.filepath", A.toAttribute $ T.pack $ srcLocFile loc)
+    , ("code.lineno", A.toAttribute $ srcLocStartLine loc)
+    , ("code.package", A.toAttribute $ T.pack $ srcLocPackage loc)
+    ]
+
+
+{- | Attributes are added to the end of the span argument list, so will be discarded
+ if the number of attributes in the span exceeds the limit.
+-}
+addAttributesToSpanArguments :: H.HashMap Text A.Attribute -> SpanArguments -> SpanArguments
+addAttributesToSpanArguments attrs args = args {attributes = H.union (attributes args) attrs}
+
+
 {- | The simplest function for annotating code with trace information.
 
  @since 0.0.1.0
 -}
-inSpan ::
-  (MonadUnliftIO m, HasCallStack) =>
-  Tracer ->
-  -- | The name of the span. This may be updated later via 'updateName'
-  Text ->
-  -- | Additional options for creating the span, such as 'SpanKind',
+inSpan
+  :: (MonadUnliftIO m, HasCallStack)
+  => Tracer
+  -> Text
+  -- ^ The name of the span. This may be updated later via 'updateName'
+  -> SpanArguments
+  -- ^ Additional options for creating the span, such as 'SpanKind',
   -- span links, starting attributes, etc.
-  SpanArguments ->
-  -- | The action to perform. 'inSpan' will record the time spent on the
+  -> m a
+  -- ^ The action to perform. 'inSpan' will record the time spent on the
   -- action without forcing strict evaluation of the result. Any uncaught
   -- exceptions will be recorded and rethrown.
-  m a ->
-  m a
-inSpan t n args m = inSpan'' t callStack n args (const m)
+  -> m a
+inSpan t n args m = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes}) (const m)
 
 
-inSpan' ::
-  (MonadUnliftIO m, HasCallStack) =>
-  Tracer ->
-  -- | The name of the span. This may be updated later via 'updateName'
-  Text ->
-  SpanArguments ->
-  (Span -> m a) ->
-  m a
-inSpan' t = inSpan'' t callStack
+inSpan'
+  :: (MonadUnliftIO m, HasCallStack)
+  => Tracer
+  -> Text
+  -- ^ The name of the span. This may be updated later via 'updateName'
+  -> SpanArguments
+  -> (Span -> m a)
+  -> m a
+inSpan' t n args = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes})
 
 
-inSpan'' ::
-  (MonadUnliftIO m) =>
-  Tracer ->
-  -- | Record the location of the span in the codebase using the provided
-  -- callstack for source location info.
-  CallStack ->
-  -- | The name of the span. This may be updated later via 'updateName'
-  Text ->
-  SpanArguments ->
-  (Span -> m a) ->
-  m a
-inSpan'' t cs n args f =
+inSpan''
+  :: (MonadUnliftIO m, HasCallStack)
+  => Tracer
+  -> Text
+  -- ^ The name of the span. This may be updated later via 'updateName'
+  -> SpanArguments
+  -> (Span -> m a)
+  -> m a
+inSpan'' t n args f = do
   bracketError
     ( liftIO $ do
         ctx <- getContext
         s <- createSpanWithoutCallStack t ctx n args
         adjustContext (insertSpan s)
-        whenSpanIsRecording s $ addAttributes s $ makeCodeAttributes cs
+        whenSpanIsRecording s $ addAttributes s $ makeCodeAttributes callStack
         pure (lookupSpan ctx, s)
     )
     ( \e (parent, s) -> liftIO $ do
         forM_ e $ \(SomeException inner) -> do
           setStatus s $ Error $ T.pack $ displayException inner
-          recordException s [] Nothing inner
+          recordException s [("exception.escaped", A.toAttribute True)] Nothing inner
         endSpan s Nothing
         adjustContext $ \ctx ->
           maybe (removeSpan ctx) (`insertSpan` ctx) parent
@@ -418,15 +463,15 @@ Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetr
 
 @since 0.0.1.0
 -}
-addAttribute ::
-  (MonadIO m, A.ToAttribute a) =>
-  -- | Span to add the attribute to
-  Span ->
-  -- | Attribute name
-  Text ->
-  -- | Attribute value
-  a ->
-  m ()
+addAttribute
+  :: (MonadIO m, A.ToAttribute a)
+  => Span
+  -- ^ Span to add the attribute to
+  -> Text
+  -- ^ Attribute name
+  -> a
+  -- ^ Attribute value
+  -> m ()
 addAttribute (Span s) k v = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
@@ -440,15 +485,15 @@ addAttribute (FrozenSpan _) _ _ = pure ()
 addAttribute (Dropped _) _ _ = pure ()
 
 
-addAttributeByKey ::
-  (MonadIO m, A.ToAttribute a) =>
-  -- | Span to add the attribute to
-  Span ->
-  -- | Attribute key
-  A.Key a ->
-  -- | Attribute value
-  a ->
-  m ()
+addAttributeByKey
+  :: (MonadIO m, A.ToAttribute a)
+  => Span
+  -- ^ Span to add the attribute to
+  -> A.Key a
+  -- ^ Attribute key
+  -> a
+  -- ^ Attribute value
+  -> m ()
 addAttributeByKey s (A.Key k) = addAttribute s k
 
 
@@ -505,13 +550,22 @@ addEvent (Dropped _) _ = pure ()
 setStatus :: MonadIO m => Span -> SpanStatus -> m ()
 setStatus (Span s) st = liftIO $ modifyIORef' s $ \(!i) ->
   i
-    { spanStatus =
-        if st > spanStatus i
-          then st
-          else spanStatus i
+    { spanStatus = max st (spanStatus i)
     }
 setStatus (FrozenSpan _) _ = pure ()
 setStatus (Dropped _) _ = pure ()
+
+
+alterFlags :: (MonadIO m) => Span -> (TraceFlags -> TraceFlags) -> m ()
+alterFlags (Span s) f = liftIO $ modifyIORef' s $ \(!i) ->
+  i
+    { spanContext =
+        (spanContext i)
+          { traceFlags = f $ traceFlags $ spanContext i
+          }
+    }
+alterFlags (FrozenSpan _) _ = pure ()
+alterFlags (Dropped _) _ = pure ()
 
 
 {- |
@@ -523,12 +577,12 @@ Alternatives for the name update may be late Span creation, when Span is started
 
 @since 0.0.1.0
 -}
-updateName ::
-  (MonadIO m) =>
-  Span ->
-  -- | The new span name, which supersedes whatever was passed in when the Span was started
-  Text ->
-  m ()
+updateName
+  :: (MonadIO m)
+  => Span
+  -> Text
+  -- ^ The new span name, which supersedes whatever was passed in when the Span was started
+  -> m ()
 updateName (Span s) n = liftIO $ modifyIORef' s $ \(!i) -> i {spanName = n}
 updateName (FrozenSpan _) _ = pure ()
 updateName (Dropped _) _ = pure ()
@@ -544,19 +598,19 @@ parent via a Context it is contained in. Also, putting the Span into a Context w
 
 @since 0.0.1.0
 -}
-endSpan ::
-  (MonadIO m) =>
-  Span ->
-  -- | Optional @Timestamp@ signalling the end time of the span. If not provided, the current time will be used.
-  Maybe Timestamp ->
-  m ()
+endSpan
+  :: (MonadIO m)
+  => Span
+  -> Maybe Timestamp
+  -- ^ Optional @Timestamp@ signalling the end time of the span. If not provided, the current time will be used.
+  -> m ()
 endSpan (Span s) mts = liftIO $ do
   ts <- maybe getTimestamp pure mts
   (alreadyFinished, frozenS) <- atomicModifyIORef' s $ \(!i) ->
     let ref = i {spanEnd = spanEnd i <|> Just ts}
-     in (ref, (isJust $ spanEnd i, ref))
+    in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
-    eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
+    eResult <- try $ mapM_ (`spanProcessorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
     case eResult of
       Left err -> print (err :: SomeException)
       Right _ -> pure ()
@@ -649,11 +703,11 @@ getTimestamp :: (MonadIO m) => m Timestamp
 getTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime Realtime
 
 
-limitBy ::
-  Tracer ->
-  -- | Attribute count
-  (SpanLimits -> Maybe Int) ->
-  A.AttributeLimits
+limitBy
+  :: Tracer
+  -> (SpanLimits -> Maybe Int)
+  -- ^ Attribute count
+  -> A.AttributeLimits
 limitBy t countF =
   A.AttributeLimits
     { attributeCountLimit = countLimit
@@ -687,7 +741,6 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsAttributeLimits :: A.AttributeLimits
   , tracerProviderOptionsSpanLimits :: SpanLimits
   , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
-  , tracerProviderOptionsLogger :: Log Text -> IO ()
   }
 
 
@@ -706,14 +759,13 @@ emptyTracerProviderOptions =
     A.defaultAttributeLimits
     defaultSpanLimits
     mempty
-    (\_ -> pure ())
 
 
 {- | Initialize a new tracer provider
 
  You should generally use 'getGlobalTracerProvider' for most applications.
 -}
-createTracerProvider :: (MonadIO m) => [Processor] -> TracerProviderOptions -> m TracerProvider
+createTracerProvider :: (MonadIO m) => [SpanProcessor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   let g = tracerProviderOptionsIdGenerator opts
   pure $
@@ -725,7 +777,6 @@ createTracerProvider ps opts = liftIO $ do
       (tracerProviderOptionsAttributeLimits opts)
       (tracerProviderOptionsSpanLimits opts)
       (tracerProviderOptionsPropagators opts)
-      (tracerProviderOptionsLogger opts)
 
 
 {- | Access the globally configured 'TracerProvider'. Once the
@@ -831,23 +882,23 @@ defaultSpanArguments = def
 shutdownTracerProvider :: (MonadIO m) => TracerProvider -> m ()
 shutdownTracerProvider TracerProvider {..} = liftIO $ do
   asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
-    processorShutdown processor
+    spanProcessorShutdown processor
   mapM_ wait asyncShutdownResults
 
 
 {- | This method provides a way for provider to immediately export all spans that have not yet
  been exported for all the internal processors.
 -}
-forceFlushTracerProvider ::
-  (MonadIO m) =>
-  TracerProvider ->
-  -- | Optional timeout in microseconds, defaults to 5,000,000 (5s)
-  Maybe Int ->
-  -- | Result that denotes whether the flush action succeeded, failed, or timed out.
-  m FlushResult
+forceFlushTracerProvider
+  :: (MonadIO m)
+  => TracerProvider
+  -> Maybe Int
+  -- ^ Optional timeout in microseconds, defaults to 5,000,000 (5s)
+  -> m FlushResult
+  -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
 forceFlushTracerProvider TracerProvider {..} mtimeout = liftIO $ do
   jobs <- forM tracerProviderProcessors $ \processor -> async $ do
-    processorForceFlush processor
+    spanProcessorForceFlush processor
   mresult <-
     timeout (fromMaybe 5_000_000 mtimeout) $
       foldM

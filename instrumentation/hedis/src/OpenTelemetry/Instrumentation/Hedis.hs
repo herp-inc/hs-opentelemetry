@@ -563,7 +563,7 @@ makeAttributes info@Orig.ConnInfo {Orig.connectHost, Orig.connectPort} =
       case connectPort of
         Orig.PortNumber n -> ("ip_tcp", ("net.peer.port", fromString $ show n))
         Orig.UnixSocket p -> ("other", ("net.sock.peer.port", fromString p))
-   in
+  in
     [ ("db.connection_string", fromString $ showsPrecConnectInfoMasked 0 info "")
     , portAttr
     , (("net.transport", transportAttr))

@@ -27,9 +27,9 @@ main = do
     shutdownTracerProvider
     $ \tracerProvider ->
       let loggerConfig = appendHooksToConfig tracerProvider defaultLoggerConfig
-       in do
-            withLogger loggerConfig $ \logger -> do
-              let tracer = makeTracer tracerProvider "main" tracerOptions
-              inSpan' tracer "main" defaultSpanArguments $ \span -> do
-                addAttributeByKey span envKey "test"
-                logIO logger "log"
+      in do
+          withLogger loggerConfig $ \logger -> do
+            let tracer = makeTracer tracerProvider "main" tracerOptions
+            inSpan' tracer "main" defaultSpanArguments $ \span -> do
+              addAttributeByKey span envKey "test"
+              logIO logger "log"

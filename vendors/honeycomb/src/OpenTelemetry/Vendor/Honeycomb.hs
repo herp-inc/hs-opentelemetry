@@ -252,11 +252,11 @@ honeycombTargetKey = unsafePerformIO $ Context.newKey "honeycombTarget"
  ensure that this context is the parent of all child contexts in which you might
  want to get the target (for instance to generate Honeycomb links).
 -}
-getOrInitializeHoneycombTargetInContext ::
-  (MonadIO m) =>
-  -- | Timeout for the operation before assuming Honeycomb is inaccessible
-  NominalDiffTime ->
-  m (Maybe HoneycombTarget)
+getOrInitializeHoneycombTargetInContext
+  :: (MonadIO m)
+  => NominalDiffTime
+  -- ^ Timeout for the operation before assuming Honeycomb is inaccessible
+  -> m (Maybe HoneycombTarget)
 getOrInitializeHoneycombTargetInContext theTimeout = do
   mmTarget <- getHoneycombTargetInContext'
   case mmTarget of

@@ -36,39 +36,35 @@ import Foreign.Storable (peekElemOff)
 import System.IO.Unsafe (unsafeDupablePerformIO)
 
 
-newTraceIdFromHeader ::
-  -- | ASCII numeric text
-  ByteString ->
-  ShortByteString
+newTraceIdFromHeader
+  :: ByteString
+  -- ^ ASCII numeric text
+  -> ShortByteString
 newTraceIdFromHeader bs =
-  let
-    len = 16 :: Int
-    !(ByteArray ba) =
-      runST $ do
-        mba <- newByteArray len
-        let w64 = readWord64BS bs
-        writeByteArray mba 0 (0 :: Word64) -- fill zeros to one upper Word64-size area
-        writeByteArrayNbo mba 1 w64 -- offset one Word64-size
-        freezeByteArray mba 0 len
-   in
-    SBI.SBS ba
+  let len = 16 :: Int
+      !(ByteArray ba) =
+        runST $ do
+          mba <- newByteArray len
+          let w64 = readWord64BS bs
+          writeByteArray mba 0 (0 :: Word64) -- fill zeros to one upper Word64-size area
+          writeByteArrayNbo mba 1 w64 -- offset one Word64-size
+          freezeByteArray mba 0 len
+  in SBI.SBS ba
 
 
-newSpanIdFromHeader ::
-  -- | ASCII numeric text
-  ByteString ->
-  ShortByteString
+newSpanIdFromHeader
+  :: ByteString
+  -- ^ ASCII numeric text
+  -> ShortByteString
 newSpanIdFromHeader bs =
-  let
-    len = 8 :: Int
-    !(ByteArray ba) =
-      runST $ do
-        mba <- newByteArray len
-        let w64 = readWord64BS bs
-        writeByteArrayNbo mba 0 w64
-        freezeByteArray mba 0 len
-   in
-    SBI.SBS ba
+  let len = 8 :: Int
+      !(ByteArray ba) =
+        runST $ do
+          mba <- newByteArray len
+          let w64 = readWord64BS bs
+          writeByteArrayNbo mba 0 w64
+          freezeByteArray mba 0 len
+  in SBI.SBS ba
 
 
 {- | Write a primitive value to the byte array with network-byte-order (big-endian).
@@ -114,13 +110,13 @@ asciiWord8ToWord8 b = b - fromIntegral (C.ord '0')
 newHeaderFromTraceId :: ShortByteString -> ByteString
 newHeaderFromTraceId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 1
-   in showWord64BS w64
+  in showWord64BS w64
 
 
 newHeaderFromSpanId :: ShortByteString -> ByteString
 newHeaderFromSpanId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 0
-   in showWord64BS w64
+  in showWord64BS w64
 
 
 indexByteArrayNbo :: ByteArray -> Int -> Word64

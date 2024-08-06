@@ -31,6 +31,7 @@ library:
   - microlens
   - yesod-core
   - hs-opentelemetry-api == 0.1.*
+  - hs-opentelemetry-instrumentation-wai >= 0.0.1 && < 0.2
   - unliftio
   - text
   - template-haskell

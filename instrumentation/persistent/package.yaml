@@ -28,6 +28,7 @@ library:
   source-dirs: src
   dependencies:
   - hs-opentelemetry-api == 0.1.*
+  - clock
   - mtl
   - persistent >= 2.13.3
   - resourcet

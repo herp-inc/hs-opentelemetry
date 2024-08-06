@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-sdk
-version:             0.0.3.5
+version:             0.0.3.6
 
 <<: *preface
 
@@ -37,7 +37,11 @@ library:
     - OpenTelemetry.Baggage
     - OpenTelemetry.Context
     - OpenTelemetry.Context.ThreadLocal
+    - OpenTelemetry.Exporter.Span
+    - OpenTelemetry.Exporter.LogRecord
     - OpenTelemetry.Exporter
+    - OpenTelemetry.Processor.Span
+    - OpenTelemetry.Processor.LogRecord
     - OpenTelemetry.Processor
     - OpenTelemetry.Propagator
     - OpenTelemetry.Resource
@@ -66,6 +70,7 @@ library:
   - data-default-class
   - hs-opentelemetry-exporter-otlp == 0.0.1.*
   - hs-opentelemetry-propagator-b3 ==0.0.1.*
+  - hs-opentelemetry-propagator-datadog ==0.0.0.*
   - hs-opentelemetry-propagator-w3c == 0.0.1.*
   - http-types
   - mwc-random

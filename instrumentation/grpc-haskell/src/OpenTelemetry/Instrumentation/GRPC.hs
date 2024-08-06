@@ -228,14 +228,14 @@ instance (GPropagatable f, GPropagatable g) => GPropagatable (f G.:*: g) where
   gPropagatableService tracer (rep1 G.:*: rep2) =
     let rep1' = gPropagatableService tracer rep1
         rep2' = gPropagatableService tracer rep2
-     in rep1' G.:*: rep2'
+    in rep1' G.:*: rep2'
 
 
-extractor ::
-  Otel.Tracer ->
-  (GRPC.ServerRequest streamType request response -> IO (GRPC.ServerResponse streamType response)) ->
-  GRPC.ServerRequest streamType request response ->
-  IO (GRPC.ServerResponse streamType response)
+extractor
+  :: Otel.Tracer
+  -> (GRPC.ServerRequest streamType request response -> IO (GRPC.ServerResponse streamType response))
+  -> GRPC.ServerRequest streamType request response
+  -> IO (GRPC.ServerResponse streamType response)
 extractor tracer action request = do
   let
     metadata = getMetadata request
@@ -259,11 +259,11 @@ getMetadata (GRPC.ServerWriterRequest GRPC.ServerCall {GRPC.metadata} _ _) = met
 getMetadata (GRPC.ServerBiDiRequest GRPC.ServerCall {GRPC.metadata} _ _) = metadata
 
 
-injector ::
-  Otel.Tracer ->
-  (GRPC.ClientRequest streamType request response -> IO (GRPC.ClientResult streamType response)) ->
-  GRPC.ClientRequest streamType request response ->
-  IO (GRPC.ClientResult streamType response)
+injector
+  :: Otel.Tracer
+  -> (GRPC.ClientRequest streamType request response -> IO (GRPC.ClientResult streamType response))
+  -> GRPC.ClientRequest streamType request response
+  -> IO (GRPC.ClientResult streamType response)
 injector tracer action request = do
   let propagator = convertToGrpcPropagator $ Otel.getTracerProviderPropagators $ Otel.getTracerTracerProvider tracer
   context <- Otel.getContext

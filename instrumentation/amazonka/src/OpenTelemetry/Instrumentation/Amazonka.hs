@@ -37,6 +37,7 @@ import Data.Typeable (Typeable)
 import Data.Version (showVersion)
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified Network.HTTP.Client as HTTP
+import qualified OpenTelemetry.Attributes as Otel (emptyAttributes)
 import qualified OpenTelemetry.Attributes.Map as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.SemanticConventions as Otel
@@ -52,8 +53,9 @@ appendHooksToEnv tracerProvider env@Env {hooks} = withFrozenCallStack $ liftIO $
         tracerProvider
         ( Otel.InstrumentationLibrary
             "hs-opentelemetry-instrumentation-amazonka"
-            $ Text.pack
-            $ showVersion version
+            (Text.pack $ showVersion version)
+            ""
+            Otel.emptyAttributes
         )
         Otel.tracerOptions
   tls <- makeThreadLocalStorage
@@ -83,12 +85,12 @@ configuredRequestHook tracer tls hook env request = do
   hook env request
 
 
-responseHook ::
-  ThreadLocalStorage ->
-  forall a.
-  (AWSRequest a, Typeable a) =>
-  Hooks.Hook_ (Request a, ClientResponse (AWSResponse a)) ->
-  Hooks.Hook_ (Request a, ClientResponse (AWSResponse a))
+responseHook
+  :: ThreadLocalStorage
+  -> forall a
+   . (AWSRequest a, Typeable a)
+  => Hooks.Hook_ (Request a, ClientResponse (AWSResponse a))
+  -> Hooks.Hook_ (Request a, ClientResponse (AWSResponse a))
 responseHook tls hook env (request, response) = do
   hook env (request, response)
   spanRef <- TLS.getTLS tls
@@ -101,12 +103,12 @@ responseHook tls hook env (request, response) = do
     _ -> assert False $ pure () -- something went wrong
 
 
-errorHook ::
-  ThreadLocalStorage ->
-  forall a.
-  (AWSRequest a, Typeable a) =>
-  Hooks.Hook_ (Hooks.Finality, Request a, Error) ->
-  Hooks.Hook_ (Hooks.Finality, Request a, Error)
+errorHook
+  :: ThreadLocalStorage
+  -> forall a
+   . (AWSRequest a, Typeable a)
+  => Hooks.Hook_ (Hooks.Finality, Request a, Error)
+  -> Hooks.Hook_ (Hooks.Finality, Request a, Error)
 errorHook tls hook env (finality, request, error) = do
   hook env (finality, request, error)
   spanRef <- TLS.getTLS tls
@@ -135,7 +137,7 @@ makeAwsRequestAttributes Request {service = Service {abbrev}} =
 makeAwsResponseAttributes :: Request a -> ClientResponse (AWSResponse a) -> Otel.AttributeMap
 makeAwsResponseAttributes _ clientResponse =
   let maybeRequestId = Text.decodeLatin1 <$> fold (flip lookup (HTTP.responseHeaders clientResponse) <$> ["x-amz-request-id", "x-amzn-requestid"])
-   in mempty & maybe id (Otel.insertByKey Otel.aws_requestId) maybeRequestId
+  in mempty & maybe id (Otel.insertByKey Otel.aws_requestId) maybeRequestId
 
 
 makeFinalErrorAttributes :: Error -> Otel.AttributeMap
@@ -147,5 +149,5 @@ makeFinalErrorAttributes error =
         TransportError _ -> "transport error"
         SerializeError _ -> "serialize error"
         ServiceError _ -> "service error"
-   in
+  in
     mempty & Otel.insertByKey Otel.error_type errorType

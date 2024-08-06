@@ -30,8 +30,8 @@ import OpenTelemetry.Propagator.Datadog.Internal (
   newSpanIdFromHeader,
   newTraceIdFromHeader,
  )
-import OpenTelemetry.Trace (SpanContext (SpanContext, isRemote, spanId, traceFlags, traceId, traceState))
 import OpenTelemetry.Trace.Core (
+  SpanContext (SpanContext, isRemote, spanId, traceFlags, traceId, traceState),
   getSpanContext,
   wrapSpanContext,
  )
@@ -44,21 +44,20 @@ datadogTraceContextPropagator =
   Propagator
     { propagatorNames = ["datadog trace context"]
     , extractor = \hs c -> do
-        let
-          spanContext' = do
-            traceId <- TraceId . newTraceIdFromHeader <$> lookup traceIdKey hs
-            parentId <- SpanId . newSpanIdFromHeader <$> lookup parentIdKey hs
-            samplingPriority <- T.pack . BC.unpack <$> lookup samplingPriorityKey hs
-            pure $
-              SpanContext
-                { traceId
-                , spanId = parentId
-                , isRemote = True
-                , -- when 0, not sampled
-                  -- refer: OpenTelemetry.Internal.Trace.Types.isSampled
-                  traceFlags = TraceFlags 1
-                , traceState = TraceState [(TS.Key samplingPriorityKey, TS.Value samplingPriority)]
-                }
+        let spanContext' = do
+              traceId <- TraceId . newTraceIdFromHeader <$> lookup traceIdKey hs
+              parentId <- SpanId . newSpanIdFromHeader <$> lookup parentIdKey hs
+              samplingPriority <- T.pack . BC.unpack <$> lookup samplingPriorityKey hs
+              pure $
+                SpanContext
+                  { traceId
+                  , spanId = parentId
+                  , isRemote = True
+                  , -- when 0, not sampled
+                    -- refer: OpenTelemetry.Internal.Trace.Types.isSampled
+                    traceFlags = TraceFlags 1
+                  , traceState = TraceState [(TS.Key samplingPriorityKey, TS.Value samplingPriority)]
+                  }
         case spanContext' of
           Nothing -> pure c
           Just spanContext -> pure $ insertSpan (wrapSpanContext spanContext) c
@@ -67,9 +66,8 @@ datadogTraceContextPropagator =
           Nothing -> pure hs
           Just span' -> do
             SpanContext {traceId, spanId, traceState = TraceState traceState} <- getSpanContext span'
-            let
-              traceIdValue = (\(TraceId b) -> newHeaderFromTraceId b) traceId
-              parentIdValue = (\(SpanId b) -> newHeaderFromSpanId b) spanId
+            let traceIdValue = (\(TraceId b) -> newHeaderFromTraceId b) traceId
+                parentIdValue = (\(SpanId b) -> newHeaderFromSpanId b) spanId
             samplingPriority <-
               case lookup (TS.Key samplingPriorityKey) traceState of
                 Nothing -> pure "1" -- when an origin of the trace

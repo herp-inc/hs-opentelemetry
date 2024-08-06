@@ -32,6 +32,7 @@ library:
   - iproute
   - network
   - text
+  - unordered-containers
   - vault
   - wai
 

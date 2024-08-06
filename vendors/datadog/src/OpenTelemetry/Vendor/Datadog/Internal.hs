@@ -6,11 +6,11 @@ import Data.Word (Word64, Word8)
 
 
 -- | Read 'ByteArray' to 'Word64' with network-byte-order.
-indexByteArrayNbo ::
-  ByteArray ->
-  -- | Offset in 'Word64'-size unit
-  Int ->
-  Word64
+indexByteArrayNbo
+  :: ByteArray
+  -> Int
+  -- ^ Offset in 'Word64'-size unit
+  -> Word64
 indexByteArrayNbo ba offset =
   loop 0 0
   where

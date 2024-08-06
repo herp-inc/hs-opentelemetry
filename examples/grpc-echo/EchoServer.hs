@@ -38,9 +38,9 @@ data Args = Args
 instance ParseRecord Args
 
 
-doEcho ::
-  ServerRequest 'Normal EchoRequest EchoResponse ->
-  IO (ServerResponse 'Normal EchoResponse)
+doEcho
+  :: ServerRequest 'Normal EchoRequest EchoResponse
+  -> IO (ServerResponse 'Normal EchoResponse)
 doEcho (ServerNormalRequest _meta (EchoRequest pay)) = do
   return (ServerNormalResponse (EchoResponse pay) mempty StatusOk "")
 

@@ -145,12 +145,12 @@ type family ResourceMerge schemaLeft schemaRight :: Maybe Symbol where
 
  @since 0.0.1.0
 -}
-mergeResources ::
-  -- | the old resource
-  Resource old ->
-  -- | the updating resource whose attributes take precedence
-  Resource new ->
-  Resource (ResourceMerge old new)
+mergeResources
+  :: Resource old
+  -- ^ the old resource
+  -> Resource new
+  -- ^ the updating resource whose attributes take precedence
+  -> Resource (ResourceMerge old new)
 mergeResources (Resource l) (Resource r) = Resource (unsafeMergeAttributesIgnoringLimits l r)
 
 
@@ -186,7 +186,7 @@ data MaterializedResources = MaterializedResources
   { materializedResourcesSchema :: Maybe String
   , materializedResourcesAttributes :: Attributes
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 {- | A placeholder for 'MaterializedResources' when no resource information is

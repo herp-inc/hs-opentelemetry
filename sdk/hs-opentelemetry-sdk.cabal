@@ -1,22 +1,22 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
-name:           hs-opentelemetry-sdk
-version:        0.0.3.5
-synopsis:       OpenTelemetry SDK for use in applications.
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/sdk#readme>
-category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
-homepage:       https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
-author:         Ian Duncan, Jade Lovelace
-maintainer:     ian@iankduncan.com
-copyright:      2022 Ian Duncan
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
+name:               hs-opentelemetry-sdk
+version:            0.0.3.6
+synopsis:           OpenTelemetry SDK for use in applications.
+description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/sdk#readme>
+category:           OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
+homepage:           https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
+author:             Ian Duncan, Jade Lovelace
+maintainer:         ian@iankduncan.com
+copyright:          2024 Ian Duncan, Mercury Technologies
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -30,7 +30,11 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Processor.Batch
+      OpenTelemetry.Processor.Batch.LogRecord
+      OpenTelemetry.Processor.Batch.Span
       OpenTelemetry.Processor.Simple
+      OpenTelemetry.Processor.Simple.LogRecord
+      OpenTelemetry.Processor.Simple.Span
       OpenTelemetry.Resource.Host.Detector
       OpenTelemetry.Resource.OperatingSystem.Detector
       OpenTelemetry.Resource.Process.Detector
@@ -48,7 +52,11 @@ library
     , OpenTelemetry.Baggage
     , OpenTelemetry.Context
     , OpenTelemetry.Context.ThreadLocal
+    , OpenTelemetry.Exporter.Span
+    , OpenTelemetry.Exporter.LogRecord
     , OpenTelemetry.Exporter
+    , OpenTelemetry.Processor.Span
+    , OpenTelemetry.Processor.LogRecord
     , OpenTelemetry.Processor
     , OpenTelemetry.Propagator
     , OpenTelemetry.Resource
@@ -80,6 +88,7 @@ library
     , hs-opentelemetry-api >=0.0.3 && <0.2
     , hs-opentelemetry-exporter-otlp ==0.0.1.*
     , hs-opentelemetry-propagator-b3 ==0.0.1.*
+    , hs-opentelemetry-propagator-datadog ==0.0.0.*
     , hs-opentelemetry-propagator-w3c ==0.0.1.*
     , http-types
     , mwc-random

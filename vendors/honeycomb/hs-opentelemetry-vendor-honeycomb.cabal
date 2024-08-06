@@ -1,22 +1,22 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
-name:           hs-opentelemetry-vendor-honeycomb
-version:        0.0.1.0
-synopsis:       Optional OpenTelemetry integration for Honeycomb
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>
-category:       OpenTelemetry
-homepage:       https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
-author:         Ian Duncan, Jade Lovelace
-maintainer:     ian@iankduncan.com
-copyright:      2022 Ian Duncan
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
+name:               hs-opentelemetry-vendor-honeycomb
+version:            0.0.1.1
+synopsis:           Optional OpenTelemetry integration for Honeycomb
+description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>
+category:           OpenTelemetry
+homepage:           https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
+author:             Ian Duncan, Jade Lovelace
+maintainer:         ian@iankduncan.com
+copyright:          2024 Ian Duncan, Mercury Technologies
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -32,11 +32,11 @@ library
       Paths_hs_opentelemetry_vendor_honeycomb
   hs-source-dirs:
       src
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-export-lists -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-missing-kind-signatures
+  ghc-options: -Wunused-packages
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , honeycomb >=0.1
+    , honeycomb >=0.1.0.1
     , hs-opentelemetry-api
     , mtl
     , text
@@ -55,13 +55,13 @@ test-suite test
       Paths_hs_opentelemetry_vendor_honeycomb
   hs-source-dirs:
       test
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-export-lists -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-missing-kind-signatures -threaded -rtsopts -with-rtsopts=-N -Wno-incomplete-uni-patterns -O0
+  ghc-options: -Wunused-packages -threaded -rtsopts -with-rtsopts=-N -Wno-incomplete-uni-patterns -O0
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , honeycomb >=0.1
+    , honeycomb >=0.1.0.1
     , hs-opentelemetry-api
     , hs-opentelemetry-vendor-honeycomb
     , hspec

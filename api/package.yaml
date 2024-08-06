@@ -28,6 +28,7 @@ dependencies:
 - mtl
 - unliftio-core
 - unordered-containers
+- vault
 - vector
 - vector-builder
 
@@ -37,6 +38,7 @@ library:
   other-modules:
   - OpenTelemetry.Context.Types
   - OpenTelemetry.Internal.Trace.Types
+  - Paths_hs_opentelemetry_api
   dependencies:
   - async
   - attoparsec
@@ -48,9 +50,11 @@ library:
   - hashable
   - http-types
   - memory
+  - safe-exceptions
   - template-haskell
   - text
-  - thread-utils-context == 0.2.*
+  - thread-utils-context == 0.3.*
+  - transformers
   - vault
 
 tests:
@@ -66,3 +70,4 @@ tests:
     - hspec
     - vector
     - vector-builder
+    - text

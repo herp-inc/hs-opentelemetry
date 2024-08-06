@@ -68,15 +68,15 @@ data Attributes = Attributes
   deriving stock (Show, Read, Eq, Ord, Generic)
 
 
-makeConnection ::
-  IConnection connection =>
-  -- | Original connection
-  connection ->
-  Otel.TracerProvider ->
-  Attributes ->
-  -- | Extra attributes
-  Attr.AttributeMap ->
-  Connection
+makeConnection
+  :: IConnection connection
+  => connection
+  -- ^ Original connection
+  -> Otel.TracerProvider
+  -> Attributes
+  -> Attr.AttributeMap
+  -- ^ Extra attributes
+  -> Connection
 makeConnection original provider attributes extraAttributes =
   Connection
     { original = ConnWrapper original
@@ -109,12 +109,12 @@ convertAttributes
       & insert Attr.server_address server_address
       & insert Attr.server_port (fromIntegral <$> server_port)
     where
-      insert ::
-        Attr.ToAttribute a =>
-        Attr.Key a ->
-        Maybe a ->
-        Attr.AttributeMap ->
-        Attr.AttributeMap
+      insert
+        :: Attr.ToAttribute a
+        => Attr.Key a
+        -> Maybe a
+        -> Attr.AttributeMap
+        -> Attr.AttributeMap
       insert _ Nothing = id
       insert key (Just value) = Attr.insertByKey key value
 

@@ -266,13 +266,13 @@ empty :: Baggage
 empty = Baggage H.empty
 
 
-insert ::
-  -- | The name for which to set the value
-  Token ->
-  -- | The value to set. Use 'element' to construct a well-formed element value.
-  Element ->
-  Baggage ->
-  Baggage
+insert
+  :: Token
+  -- ^ The name for which to set the value
+  -> Element
+  -- ^ The value to set. Use 'element' to construct a well-formed element value.
+  -> Baggage
+  -> Baggage
 insert k v (Baggage c) = Baggage (H.insert k v c)
 
 

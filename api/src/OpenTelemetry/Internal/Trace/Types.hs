@@ -26,7 +26,7 @@ import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
-import OpenTelemetry.Logging.Core (Log)
+import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
@@ -35,71 +35,18 @@ import OpenTelemetry.Trace.TraceState
 import OpenTelemetry.Util
 
 
-data ExportResult
-  = Success
-  | Failure (Maybe SomeException)
-
-
-{- | An identifier for the library that provides the instrumentation for a given Instrumented Library.
- Instrumented Library and Instrumentation Library may be the same library if it has built-in OpenTelemetry instrumentation.
-
- The inspiration of the OpenTelemetry project is to make every library and application observable out of the box by having them call OpenTelemetry API directly.
- However, many libraries will not have such integration, and as such there is a need for a separate library which would inject such calls, using mechanisms such as wrapping interfaces,
- subscribing to library-specific callbacks, or translating existing telemetry into the OpenTelemetry model.
-
- A library that enables OpenTelemetry observability for another library is called an Instrumentation Library.
-
- An instrumentation library should be named to follow any naming conventions of the instrumented library (e.g. 'middleware' for a web framework).
-
- If there is no established name, the recommendation is to prefix packages with "hs-opentelemetry-instrumentation", followed by the instrumented library name itself.
-
- In general, you can initialize the instrumentation library like so:
-
- @
-
- import qualified Data.Text as T
- import Data.Version (showVersion)
- import Paths_your_package_name
-
- instrumentationLibrary :: InstrumentationLibrary
- instrumentationLibrary = InstrumentationLibrary
-   { libraryName = "your_package_name"
-   , libraryVersion = T.pack $ showVersion version
-   }
-
- @
--}
-data InstrumentationLibrary = InstrumentationLibrary
-  { libraryName :: {-# UNPACK #-} !Text
-  -- ^ The name of the instrumentation library
-  , libraryVersion :: {-# UNPACK #-} !Text
-  -- ^ The version of the instrumented library
-  }
-  deriving (Ord, Eq, Generic, Show)
-
-
-instance Hashable InstrumentationLibrary
-
-
-instance IsString InstrumentationLibrary where
-  fromString str = InstrumentationLibrary (fromString str) ""
-
-
-data Exporter a = Exporter
-  { exporterExport :: HashMap InstrumentationLibrary (Vector a) -> IO ExportResult
-  , exporterShutdown :: IO ()
+data SpanExporter = SpanExporter
+  { spanExporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
+  , spanExporterShutdown :: IO ()
   }
 
 
-data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
-
-
-data Processor = Processor
-  { processorOnStart :: IORef ImmutableSpan -> Context -> IO ()
+data SpanProcessor = SpanProcessor
+  { spanProcessorOnStart :: IORef ImmutableSpan -> Context -> IO ()
   -- ^ Called when a span is started. This method is called synchronously on the thread that started the span, therefore it should not block or throw exceptions.
-  , processorOnEnd :: IORef ImmutableSpan -> IO ()
+  , spanProcessorOnEnd :: IORef ImmutableSpan -> IO ()
   -- ^ Called after a span is ended (i.e., the end timestamp is already set). This method is called synchronously within the 'OpenTelemetry.Trace.endSpan' API, therefore it should not block or throw an exception.
-  , processorShutdown :: IO (Async ShutdownResult)
+  , spanProcessorShutdown :: IO (Async ShutdownResult)
   -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
   --
   -- Shutdown SHOULD be called only once for each SpanProcessor instance. After the call to Shutdown, subsequent calls to OnStart, OnEnd, or ForceFlush are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
@@ -109,7 +56,7 @@ data Processor = Processor
   -- Shutdown MUST include the effects of ForceFlush.
   --
   -- Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the shutdown timeout configurable.
-  , processorForceFlush :: IO ()
+  , spanProcessorForceFlush :: IO ()
   -- ^ This is a hint to ensure that any tasks associated with Spans for which the SpanProcessor had already received events prior to the call to ForceFlush SHOULD be completed as soon as possible, preferably before returning from this method.
   --
   -- In particular, if any Processor has any associated exporter, it SHOULD try to call the exporter's Export with all spans for which this was not already done and then invoke ForceFlush on it. The built-in SpanProcessors MUST do so. If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. It MAY skip or abort some or all Export or ForceFlush calls it has made to achieve this goal.
@@ -126,14 +73,13 @@ data Processor = Processor
 'Tracer's can be created from a 'TracerProvider'.
 -}
 data TracerProvider = TracerProvider
-  { tracerProviderProcessors :: !(Vector Processor)
+  { tracerProviderProcessors :: !(Vector SpanProcessor)
   , tracerProviderIdGenerator :: !IdGenerator
   , tracerProviderSampler :: !Sampler
   , tracerProviderResources :: !MaterializedResources
   , tracerProviderAttributeLimits :: !AttributeLimits
   , tracerProviderSpanLimits :: !SpanLimits
   , tracerProviderPropagators :: !(Propagator Context RequestHeaders ResponseHeaders)
-  , tracerProviderLogger :: Log Text -> IO ()
   }
 
 
@@ -242,19 +188,6 @@ instance Default SpanArguments where
       , links = []
       , startTime = Nothing
       }
-
-
--- | The outcome of a call to 'OpenTelemetry.Trace.forceFlush'
-data FlushResult
-  = -- | One or more spans did not export from all associated exporters
-    -- within the alotted timeframe.
-    FlushTimeout
-  | -- | Flushing spans to all associated exporters succeeded.
-    FlushSuccess
-  | -- | One or more exporters failed to successfully export one or more
-    -- unexported spans.
-    FlushError
-  deriving (Show)
 
 
 {- |

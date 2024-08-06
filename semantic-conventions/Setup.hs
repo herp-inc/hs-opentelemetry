@@ -515,7 +515,7 @@ preBuild _ _ = do
                           case prefix of
                             Nothing -> (id, convertId id)
                             Just p -> (p <> "." <> id, convertId p <> "_" <> convertId id)
-                       in
+                      in
                         ( [hid <> ","]
                         , comment
                             <$> fold
@@ -539,22 +539,22 @@ preBuild _ _ = do
                         )
                     AttributeRef {refFields = AttributeRefFields {ref, brief}, stability, deprecated, requirementLevel, note} ->
                       let href = convertId ref
-                       in ( []
-                          , comment
-                              <$> fold
-                                [ ["- '" <> href <> "'"]
-                                , fieldLine brief $ indent 1 . convertMarkupFromMarkdownToHaddock
-                                , fieldLine stability $ indent 1 . ("Stability: " <>) . convertStability
-                                , fieldLine deprecated $ indent 1 . ("Deprecated: " <>)
-                                , fieldLine requirementLevel $ indent 1 . ("Requirement level: " <>) . convertRequirementLevel
-                                , fieldLines note $ \n ->
-                                    [ indent 1 $ "==== Note"
-                                    , indent 1 $ convertMarkupFromMarkdownToHaddock n
-                                    ]
-                                , [""]
-                                ]
-                          , []
-                          )
+                      in ( []
+                         , comment
+                            <$> fold
+                              [ ["- '" <> href <> "'"]
+                              , fieldLine brief $ indent 1 . convertMarkupFromMarkdownToHaddock
+                              , fieldLine stability $ indent 1 . ("Stability: " <>) . convertStability
+                              , fieldLine deprecated $ indent 1 . ("Deprecated: " <>)
+                              , fieldLine requirementLevel $ indent 1 . ("Requirement level: " <>) . convertRequirementLevel
+                              , fieldLines note $ \n ->
+                                  [ indent 1 $ "==== Note"
+                                  , indent 1 $ convertMarkupFromMarkdownToHaddock n
+                                  ]
+                              , [""]
+                              ]
+                         , []
+                         )
           Vector.cons
             (
               [ "-- * " <> id
@@ -621,11 +621,11 @@ convertId :: Id -> Text
 convertId =
   Text.pack . conv False . Text.unpack
   where
-    conv ::
-      Bool ->
+    conv
+      :: Bool
       -- \^ make it upper? ie. next to '_'?
-      String ->
-      String
+      -> String
+      -> String
     conv _ [] = []
     conv True (c : rest) = Char.toUpper c : conv False rest
     conv False ('_' : rest) = conv True rest

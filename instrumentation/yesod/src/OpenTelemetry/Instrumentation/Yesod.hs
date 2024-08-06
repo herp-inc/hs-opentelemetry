@@ -7,7 +7,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-{- | This module makes it easier to use hs-opentelemetry-sdk with yesod.
+{- |
+[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
+- "http" - to use the stable conventions
+- "http/dup" - to emit both the old and the stable conventions
+Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
 
 Let @Site@ be following to use in examples:
 
@@ -29,7 +33,7 @@ module OpenTelemetry.Instrumentation.Yesod (
   handlerEnvL,
 ) where
 
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import qualified Data.HashMap.Strict as H
 import Data.List (intercalate)
 import Data.Map (Map)
@@ -39,7 +43,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Vault.Lazy as V
-import GHC.Stack (HasCallStack, withFrozenCallStack)
+import GHC.Stack (HasCallStack)
 import Language.Haskell.TH (
   Clause,
   Dec,
@@ -63,7 +67,8 @@ import Language.Haskell.TH (
 import Lens.Micro (Lens', lens)
 import Network.Wai (Request (vault), requestHeaders)
 import qualified OpenTelemetry.Context as Context
-import OpenTelemetry.Context.ThreadLocal (getContext)
+import OpenTelemetry.Instrumentation.Wai (requestContext)
+import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core (
   Span,
   SpanArguments (attributes, kind),
@@ -177,14 +182,14 @@ getTracerWithGlobalTracerProvider = do
 
  See examples/yesod-minimal of hs-opentelemetry repository for usage.
 -}
-mkRouteToRenderer ::
-  -- | Yesod site type
-  Name ->
-  -- | map from subsites type names to their @routeToRenderer@ Template Haskell expressions
-  Map String ExpQ ->
-  -- | route
-  [ResourceTree String] ->
-  Q [Dec]
+mkRouteToRenderer
+  :: Name
+  -- ^ Yesod site type
+  -> Map String ExpQ
+  -- ^ map from subsites type names to their @routeToRenderer@ Template Haskell expressions
+  -> [ResourceTree String]
+  -- ^ route
+  -> Q [Dec]
 mkRouteToRenderer appName subrendererExps ress = do
   let fnName = mkName "routeToRenderer"
   clauses <- mconcat <$> traverse (goTree id []) ress
@@ -228,14 +233,14 @@ mkRouteToRenderer appName subrendererExps ress = do
 
  See examples/yesod-minimal of hs-opentelemetry repository for usage.
 -}
-mkRouteToPattern ::
-  -- | Yesod site type
-  Name ->
-  -- | map from subsites type names to their @routeToRenderer@ Template Haskell expressions
-  Map String ExpQ ->
-  -- | route
-  [ResourceTree String] ->
-  Q [Dec]
+mkRouteToPattern
+  :: Name
+  -- ^ Yesod site type
+  -> Map String ExpQ
+  -- ^ map from subsites type names to their @routeToRenderer@ Template Haskell expressions
+  -> [ResourceTree String]
+  -- ^ route
+  -> Q [Dec]
 mkRouteToPattern appName subpatternExps ress = do
   let fnName = mkName "routeToPattern"
   sequence
@@ -319,47 +324,64 @@ instance Yesod Site where
       . defaultYesodMiddleware
 @
 -}
-openTelemetryYesodMiddleware ::
-  (M.MonadTracer (HandlerFor site), ToTypedContent res, HasCallStack) =>
-  RouteRenderer site ->
-  HandlerFor site res ->
-  HandlerFor site res
-openTelemetryYesodMiddleware rr (HandlerFor doResponse) =
-  withFrozenCallStack $ do
-    req <- waiRequest
-    mspan <- Context.lookupSpan <$> getContext
-    mr <- getCurrentRoute
-    let sharedAttributes =
-          H.fromList $
-            catMaybes
+openTelemetryYesodMiddleware
+  :: (ToTypedContent res, M.MonadTracer (HandlerFor site))
+  => RouteRenderer site
+  -> HandlerFor site res
+  -> HandlerFor site res
+openTelemetryYesodMiddleware rr (HandlerFor doResponse) = do
+  req <- waiRequest
+  mr <- getCurrentRoute
+  semanticsOptions <- liftIO getSemanticsOptions
+  let mspan = requestContext req >>= Context.lookupSpan
+      sharedAttributes =
+        H.fromList $
+          ("http.framework", toAttribute ("yesod" :: Text))
+            : catMaybes
               [ do
                   r <- mr
-                  pure ("http.route", toAttribute $ pathRender rr r)
+                  Just ("http.route", toAttribute $ pathRender rr r)
+              , do
+                  r <- mr
+                  Just ("http.handler", toAttribute $ nameRender rr r)
               , do
                   ff <- lookup "X-Forwarded-For" $ requestHeaders req
-                  pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+                  case httpOption semanticsOptions of
+                    Stable -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    StableAndOld -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    Old -> Nothing
+              , do
+                  ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                  case httpOption semanticsOptions of
+                    Stable -> Nothing
+                    StableAndOld -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+                    Old -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
               ]
-        args =
-          defaultSpanArguments
-            { kind = maybe Server (const Internal) mspan
-            , attributes = sharedAttributes
-            }
-    mapM_ (`addAttributes` sharedAttributes) mspan
-    eResult <- M.inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \s -> do
-      catch
-        ( HandlerFor $ \hdata@HandlerData {handlerRequest = hReq@YesodRequest {reqWaiRequest = waiReq}} -> do
-            Right <$> doResponse (hdata {handlerRequest = hReq {reqWaiRequest = waiReq {vault = V.insert spanKey s $ vault waiReq}}})
-        )
-        $ \e -> do
+      args =
+        defaultSpanArguments
+          { kind = maybe Server (const Internal) mspan
+          , attributes = sharedAttributes
+          }
+      newHandler s =
+        HandlerFor $ \hdata@HandlerData {handlerRequest = hReq@YesodRequest {reqWaiRequest = waiReq}} ->
+          doResponse (hdata {handlerRequest = hReq {reqWaiRequest = waiReq {vault = V.insert spanKey s $ vault waiReq}}})
+  case mspan of
+    Nothing -> do
+      eResult <- M.inSpan' (maybe "notFound" (\r -> nameRender rr r) mr) args $ \s -> do
+        catch (Right <$> newHandler s) $ \e -> do
           -- We want to mark the span as an error if it's an InternalError,
           -- the other HCError values are 4xx status codes which don't
           -- really count as a server error in OpenTelemetry spec parlance.
           case e of
             HCError (InternalError _) -> throwIO e
-            _ -> pure (Left (e :: HandlerContents))
-    case eResult of
-      Left hc -> throwIO hc
-      Right normal -> pure normal
+            _ -> pure ()
+          pure (Left (e :: HandlerContents))
+      case eResult of
+        Left hc -> throwIO hc
+        Right normal -> pure normal
+    Just waiSpan -> do
+      addAttributes waiSpan sharedAttributes
+      newHandler waiSpan
 
 
 spanKey :: V.Key Span

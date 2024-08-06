@@ -48,7 +48,7 @@ preBuild _ _ = do
                   paramCount = length $ filter (== ('-', '>')) $ zip (init line) $ tail line
                   typ = replace oldConstraintText newConstraintText line
                   term = name ++ " = withFrozenCallStack $ wrap" ++ show paramCount ++ " \"" ++ name ++ "\" " ++ "Orig." ++ name
-                 in
+                in
                   if name == "command"
                     then Nothing -- becuase `command` has an unexposed type
                     else Just (name, typ, term)
@@ -89,11 +89,11 @@ replace old new =
     split _ [] = []
     split sep xs =
       let (p, xs') = split1 [] xs
-       in p : split sep xs'
+      in p : split sep xs'
       where
         split1 acc [] = (reverse acc, [])
         split1 acc xs@(y : ys) =
           let (a, as) = splitAt (length sep) xs
-           in if a == sep
-                then (reverse acc, as)
-                else split1 (y : acc) ys
+          in if a == sep
+              then (reverse acc, as)
+              else split1 (y : acc) ys

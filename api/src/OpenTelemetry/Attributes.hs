@@ -4,7 +4,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE StrictData #-}
 
 {- |
@@ -29,7 +28,7 @@
  Specification: https://opentelemetry.io/docs/specs/otel/common/
 -}
 module OpenTelemetry.Attributes (
-  Attributes,
+  Attributes (attributesDropped),
   emptyAttributes,
   addAttribute,
   addAttributeByKey,
@@ -89,7 +88,10 @@ data Attributes = Attributes
   , attributesCount :: {-# UNPACK #-} !Int
   , attributesDropped :: {-# UNPACK #-} !Int
   }
-  deriving stock (Show, Eq)
+  deriving stock (Show, Generic, Eq, Ord)
+
+
+instance Hashable Attributes
 
 
 instance Default Attributes where

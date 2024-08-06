@@ -39,11 +39,15 @@ import Data.ByteString.Random
 defaultIdGenerator :: IdGenerator
 #if MIN_VERSION_random(1,2,0)
 defaultIdGenerator = unsafePerformIO $ do
-  g <- createSystemRandom
-  pure $ IdGenerator
-    { generateSpanIdBytes = uniformByteStringM 8 g
-    , generateTraceIdBytes = uniformByteStringM 16 g
-    }
+  genBase <- initStdGen
+  let (spanIdGen, traceIdGen) = split genBase
+  sg <- newAtomicGenM spanIdGen
+  tg <- newAtomicGenM traceIdGen
+  pure $
+    IdGenerator
+      { generateSpanIdBytes = uniformByteStringM 8 sg
+      , generateTraceIdBytes = uniformByteStringM 16 tg
+      }
 {-# NOINLINE defaultIdGenerator #-}
 #else
 defaultIdGenerator = unsafePerformIO $ do

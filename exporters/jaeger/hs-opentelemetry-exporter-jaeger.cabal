@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -25,7 +25,9 @@ source-repository head
 
 library
   exposed-modules:
-      OpenTelemetry.Exporters.Jaeger
+      OpenTelemetry.Exporter.Jaeger
+      OpenTelemetry.Exporter.Jaeger.LogRecord
+      OpenTelemetry.Exporter.Jaeger.Span
   other-modules:
       Paths_hs_opentelemetry_exporter_jaeger
   hs-source-dirs:
