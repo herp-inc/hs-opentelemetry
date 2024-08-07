@@ -33,9 +33,9 @@ cradle:
     - path: .
       config:
         cradle:
-          cabal:
+          stack:
             - path: "api/src"
-              component: "lib:hs-opentelemetry-api"
+              component: "hs-opentelemetry-api:lib"
 
             - path: "api/test"
               component: "hs-opentelemetry-api:test:hs-opentelemetry-api-test"
@@ -86,34 +86,34 @@ cradle:
               component: "yesod-subsite:exe:yesod-subsite"
 
             - path: "exporters/handle/src"
-              component: "lib:hs-opentelemetry-exporter-handle"
+              component: "hs-opentelemetry-exporter-handle:lib"
 
             - path: "exporters/handle/test"
               component: "hs-opentelemetry-exporter-handle:test:hs-opentelemetry-exporter-handle-test"
 
             - path: "exporters/in-memory/src"
-              component: "lib:hs-opentelemetry-exporter-in-memory"
+              component: "hs-opentelemetry-exporter-in-memory:lib"
 
             - path: "exporters/in-memory/test"
               component: "hs-opentelemetry-exporter-in-memory:test:hs-opentelemetry-exporter-in-memory-test"
 
             - path: "exporters/otlp/src"
-              component: "lib:hs-opentelemetry-exporter-otlp"
+              component: "hs-opentelemetry-exporter-otlp:lib"
 
             - path: "exporters/otlp/test"
               component: "hs-opentelemetry-exporter-otlp:test:hs-opentelemetry-exporter-otlp-test"
 
             - path: "instrumentation/amazonka/src"
-              component: "lib:hs-opentelemetry-instrumentation-amazonka"
+              component: "hs-opentelemetry-instrumentation-amazonka:lib"
 
             - path: "instrumentation/cloudflare/src"
-              component: "lib:hs-opentelemetry-instrumentation-cloudflare"
+              component: "hs-opentelemetry-instrumentation-cloudflare:lib"
 
             - path: "instrumentation/cloudflare/test"
               component: "hs-opentelemetry-instrumentation-cloudflare:test:cloudflare-test"
 
             - path: "instrumentation/conduit/src"
-              component: "lib:hs-opentelemetry-instrumentation-conduit"
+              component: "hs-opentelemetry-instrumentation-conduit:lib"
 
             - path: "instrumentation/conduit/test"
               component: "hs-opentelemetry-instrumentation-conduit:test:hs-opentelemetry-instrumentation-conduit-test"
@@ -122,73 +122,67 @@ cradle:
               component: "lib:hs-opentelemetry-instrumentation-grpc-haskell"
 
             - path: "instrumentation/hdbc/src"
-              component: "lib:hs-opentelemetry-instrumentation-HDBC"
+              component: "hs-opentelemetry-instrumentation-HDBC:lib"
 
             - path: "instrumentation/hdbc-mysql/src"
-              component: "lib:hs-opentelemetry-instrumentation-HDBC-mysql"
-
-            - path: "otlp/src"
-              component: "lib:hs-opentelemetry-otlp"
+              component: "hs-opentelemetry-instrumentation-HDBC-mysql:lib"
 
             - path: "instrumentation/hedis/src"
-              component: "lib:hs-opentelemetry-instrumentation-hedis"
+              component: "hs-opentelemetry-instrumentation-hedis:lib"
 
             - path: "instrumentation/hedis/gen"
-              component: "lib:hs-opentelemetry-instrumentation-hedis"
-
-            - path: "instrumentation/herp-logger-datadog/src"
-              component: "lib:hs-opentelemetry-instrumentation-herp-logger-datadog"
+              component: "hs-opentelemetry-instrumentation-hedis:lib"
 
             - path: "instrumentation/hspec/src"
-              component: "lib:hs-opentelemetry-instrumentation-hspec"
+              component: "hs-opentelemetry-instrumentation-hspec:lib"
 
             - path: "instrumentation/hspec/test"
               component: "hs-opentelemetry-instrumentation-hspec:test:hs-opentelemetry-hspec-test"
 
             - path: "instrumentation/http-client/src"
-              component: "lib:hs-opentelemetry-instrumentation-http-client"
+              component: "hs-opentelemetry-instrumentation-http-client:lib"
 
             - path: "instrumentation/http-client/test"
               component: "hs-opentelemetry-instrumentation-http-client:test:hs-opentelemetry-instrumentation-http-client-test"
 
             - path: "instrumentation/persistent/src"
-              component: "lib:hs-opentelemetry-instrumentation-persistent"
+              component: "hs-opentelemetry-instrumentation-persistent:lib"
 
             - path: "instrumentation/persistent/test"
               component: "hs-opentelemetry-instrumentation-persistent:test:hs-opentelemetry-persistent-test"
 
             - path: "instrumentation/persistent-mysql/src"
-              component: "lib:hs-opentelemetry-instrumentation-persistent-mysql"
+              component: "hs-opentelemetry-instrumentation-persistent-mysql:lib"
 
             - path: "instrumentation/postgresql-simple/src"
-              component: "lib:hs-opentelemetry-instrumentation-postgresql-simple"
+              component: "hs-opentelemetry-instrumentation-postgresql-simple:lib"
 
             - path: "instrumentation/postgresql-simple/test"
               component: "hs-opentelemetry-instrumentation-postgresql-simple:test:hs-opentelemetry-instrumentation-postgresql-simple-test"
 
             - path: "instrumentation/wai/src"
-              component: "lib:hs-opentelemetry-instrumentation-wai"
+              component: "hs-opentelemetry-instrumentation-wai:lib"
 
             - path: "instrumentation/wai/test"
               component: "hs-opentelemetry-instrumentation-wai:test:hs-opentelemetry-instrumentation-wai-test"
 
             - path: "instrumentation/yesod/src"
-              component: "lib:hs-opentelemetry-instrumentation-yesod"
+              component: "hs-opentelemetry-instrumentation-yesod:lib"
 
             - path: "instrumentation/yesod/test"
               component: "hs-opentelemetry-instrumentation-yesod:test:hs-opentelemetry-instrumentation-yesod-test"
 
             - path: "otlp/src"
-              component: "lib:hs-opentelemetry-otlp"
+              component: "hs-opentelemetry-otlp:lib"
 
             - path: "propagators/b3/src"
-              component: "lib:hs-opentelemetry-propagator-b3"
+              component: "hs-opentelemetry-propagator-b3:lib"
 
             - path: "propagators/b3/test"
               component: "hs-opentelemetry-propagator-b3:test:hs-opentelemetry-propagator-b3-test"
 
             - path: "propagators/datadog/src"
-              component: "lib:hs-opentelemetry-propagator-datadog"
+              component: "hs-opentelemetry-propagator-datadog:lib"
 
             - path: "propagators/datadog/test/spec"
               component: "hs-opentelemetry-propagator-datadog:test:spec"
@@ -215,28 +209,28 @@ cradle:
               component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
 
             - path: "propagators/w3c/src"
-              component: "lib:hs-opentelemetry-propagator-w3c"
+              component: "hs-opentelemetry-propagator-w3c:lib"
 
             - path: "propagators/w3c/test"
               component: "hs-opentelemetry-propagator-w3c:test:hs-opentelemetry-propagator-w3c-test"
 
             - path: "sdk/src"
-              component: "lib:hs-opentelemetry-sdk"
+              component: "hs-opentelemetry-sdk:lib"
 
             - path: "sdk/test"
               component: "hs-opentelemetry-sdk:test:hs-opentelemetry-sdk-test"
 
             - path: "semantic-conventions/gen"
-              component: "lib:hs-opentelemetry-semantic-conventions"
+              component: "hs-opentelemetry-semantic-conventions:lib"
 
             - path: "utils/exceptions/src"
-              component: "lib:hs-opentelemetry-utils-exceptions"
+              component: "hs-opentelemetry-utils-exceptions:lib"
 
             - path: "utils/exceptions/test"
               component: "hs-opentelemetry-utils-exceptions:test:exceptions-test"
 
             - path: "vendors/datadog/src"
-              component: "lib:hs-opentelemetry-vendor-datadog"
+              component: "hs-opentelemetry-vendor-datadog:lib"
 
             - path: "vendors/datadog/test/spec"
               component: "hs-opentelemetry-vendor-datadog:test:spec"
