@@ -24,6 +24,7 @@ in rec {
     hs-opentelemetry-propagator-b3 = ../propagators/b3;
     hs-opentelemetry-propagator-datadog = ../propagators/datadog;
     hs-opentelemetry-propagator-w3c = ../propagators/w3c;
+    hs-opentelemetry-instrumentation-amazonka = ../instrumentation/amazonka;
     hs-opentelemetry-instrumentation-cloudflare = ../instrumentation/cloudflare;
     hs-opentelemetry-instrumentation-conduit = ../instrumentation/conduit;
     hs-opentelemetry-instrumentation-hspec = ../instrumentation/hspec;
