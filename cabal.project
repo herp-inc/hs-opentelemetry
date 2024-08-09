@@ -11,6 +11,7 @@ packages:
   , propagators/datadog
   , propagators/w3c
   , propagators/b3
+  , instrumentation/amazonka
   , instrumentation/conduit
   , instrumentation/cloudflare
   , instrumentation/hspec
