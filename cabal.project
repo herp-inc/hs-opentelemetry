@@ -42,10 +42,10 @@ packages:
 
 source-repository-package
     type: git
-    location: https://github.com/awakesecurity/gRPC-haskell
-    tag: 0b37ef53702ca315526fbd1643edb8880517ad62
+    location: https://github.com/herp-inc/gRPC-haskell
+    tag: 1732e13d4f552a0f22b40a2dc223c96c07272158
     subdir: . core
-    -- HEAD of master at 2023-06-09
+    -- HEAD of master at 2024-08-27
 
 -- proto3-suite-no-prefix でのみ必要
 -- source-repository-package
