@@ -52,7 +52,7 @@ logHook provider hook logger payload = do
     tracer =
       Otel.makeTracer
         provider
-        (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-herp-logger-datadog" $ Text.pack $ showVersion version)
+        (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-herp-logger-datadog" (Text.pack $ showVersion version) "" Otel.emptyAttributes)
         Otel.tracerOptions
   context <- Otel.getContext
   payload' <- datadogPayload (Otel.getTracerTracerProvider tracer) $ Otel.lookupSpan context

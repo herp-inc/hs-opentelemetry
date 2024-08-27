@@ -78,6 +78,8 @@ allow-newer:
   , postgresql-libpq:Cabal
   , postgresql-libpq:base
   , swagger2:base
+  , proto3-suite:mtl
+  , proto3-suite:transformers
 
 constraints:
     postgresql-simple == 0.6.4

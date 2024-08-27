@@ -48,6 +48,7 @@ import qualified Network.GRPC.HighLevel.Client as GRPC
 import qualified Network.GRPC.HighLevel.Server as GRPC
 import qualified Network.GRPC.LowLevel.Call as GRPC
 import qualified Network.HTTP.Types.Header as HTTP
+import qualified OpenTelemetry.Attributes as Otel
 import qualified OpenTelemetry.Context as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.Propagator as Otel
@@ -71,7 +72,7 @@ propagatableTraceableClient provider = withFrozenCallStack $ traceableService tr
 
 
 makeTracer :: Otel.TracerProvider -> Otel.Tracer
-makeTracer provider = Otel.makeTracer provider (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-grpc-haskell" $ Text.pack $ showVersion Paths_hs_opentelemetry_instrumentation_grpc_haskell.version) (Otel.TracerOptions Nothing)
+makeTracer provider = Otel.makeTracer provider (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-grpc-haskell" (Text.pack $ showVersion Paths_hs_opentelemetry_instrumentation_grpc_haskell.version) "" Otel.emptyAttributes) (Otel.TracerOptions Nothing)
 
 #if !PROTO3_SUITE_NO_PREFIX
 

@@ -16,6 +16,7 @@ import qualified Data.Text.Lazy as TL
 import Echo
 import Network.GRPC.HighLevel.Client
 import Network.GRPC.LowLevel hiding (payload, port)
+import Network.GRPC.LowLevel.Call hiding (payload)
 import qualified OpenTelemetry.Instrumentation.GRPC as Otel
 import qualified OpenTelemetry.Trace as Otel
 import Options.Generic
@@ -42,8 +43,7 @@ main = do
     expected = EchoResponse pay
     cfg =
       ClientConfig
-        (Host . fromMaybe "localhost" . unHelpful $ bind)
-        (Port . fromMaybe 50051 . unHelpful $ port)
+        (endpoint (Host . fromMaybe "localhost" . unHelpful $ bind) (Port . fromMaybe 50051 . unHelpful $ port))
         []
         Nothing
         Nothing
