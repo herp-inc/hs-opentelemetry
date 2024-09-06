@@ -9,3 +9,4 @@ dist-newstyle/
 volume/
 .pre-commit-config.yaml
 .devenv/
+/result
