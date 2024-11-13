@@ -58,6 +58,9 @@
       # Haskell hooks
       fourmolu = ignoreGeneratedFiles {
         enable = true;
+        excludes = [
+          "semantic-conventions/src/OpenTelemetry/SemanticConventions.hs"
+        ];
       };
       hpack.enable = true;
     };
