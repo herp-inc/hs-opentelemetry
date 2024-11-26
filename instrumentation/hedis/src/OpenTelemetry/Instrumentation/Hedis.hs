@@ -1,586 +1,168 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 module OpenTelemetry.Instrumentation.Hedis (
-  -- * The Redis Monad
-  Redis (Redis),
-  runRedis,
-  runRedis',
-
-  -- * Connection
-  Connection (..),
-  Orig.ConnectError (..),
-  connect,
-  connect',
-  checkedConnect,
-  checkedConnect',
-  disconnect,
-  disconnect',
-  withConnect,
-  withConnect',
-  withCheckedConnect,
-  withCheckedConnect',
-  Orig.ConnectInfo (..),
-  Orig.defaultConnectInfo,
-  Orig.parseConnectInfo,
-  Orig.connectCluster,
-  Orig.PortID (..),
-
-  -- * Commands
-
-  -- ** Connection
-  auth,
-  echo,
-  ping,
-  quit,
-  select,
-
-  -- ** Keys
-  del,
-  dump,
-  exists,
-  expire,
-  expireat,
-  keys,
-  Orig.MigrateOpts (..),
-  Orig.defaultMigrateOpts,
-  migrate,
-  migrateMultiple,
-  move,
-  objectRefcount,
-  objectEncoding,
-  objectIdletime,
-  persist,
-  pexpire,
-  pexpireat,
-  pttl,
-  randomkey,
-  rename,
-  renamenx,
-  restore,
-  restoreReplace,
-  Orig.Cursor,
-  Orig.cursor0,
-  Orig.ScanOpts (..),
-  Orig.defaultScanOpts,
-  scan,
-  scanOpts,
-  Orig.SortOpts (..),
-  Orig.defaultSortOpts,
-  Orig.SortOrder (..),
-  sort,
-  sortStore,
-  ttl,
-  Orig.RedisType (..),
-  getType,
-  wait,
-
-  -- ** Hashes
-  hdel,
-  hexists,
-  hget,
-  hgetall,
-  hincrby,
-  hincrbyfloat,
-  hkeys,
-  hlen,
-  hmget,
-  hmset,
-  hscan,
-  hscanOpts,
-  hset,
-  hsetnx,
-  hstrlen,
-  hvals,
-
-  -- ** HyperLogLogs
-  pfadd,
-  pfcount,
-  pfmerge,
-
-  -- ** Lists
-  blpop,
-  brpop,
-  brpoplpush,
-  lindex,
-  linsertBefore,
-  linsertAfter,
-  llen,
-  lpop,
-  lpush,
-  lpushx,
-  lrange,
-  lrem,
-  lset,
-  ltrim,
-  rpop,
-  rpoplpush,
-  rpush,
-  rpushx,
-
-  -- ** Scripting
-  eval,
-  evalsha,
-  Orig.DebugMode,
-  scriptDebug,
-  scriptExists,
-  scriptFlush,
-  scriptKill,
-  scriptLoad,
-
-  -- ** Server
-  bgrewriteaof,
-  bgsave,
-  clientGetname,
-  clientList,
-  clientPause,
-  Orig.ReplyMode,
-  clientReply,
-  clientSetname,
-  commandCount,
-  commandInfo,
-  configGet,
-  configResetstat,
-  configRewrite,
-  configSet,
-  dbsize,
-  debugObject,
-  flushall,
-  flushdb,
-  info,
-  infoSection,
-  lastsave,
-  save,
-  slaveof,
-  Orig.Slowlog (..),
-  slowlogGet,
-  slowlogLen,
-  slowlogReset,
-  time,
-
-  -- ** Sets
-  sadd,
-  scard,
-  sdiff,
-  sdiffstore,
-  sinter,
-  sinterstore,
-  sismember,
-  smembers,
-  smove,
-  spop,
-  spopN,
-  srandmember,
-  srandmemberN,
-  srem,
-  sscan,
-  sscanOpts,
-  sunion,
-  sunionstore,
-
-  -- ** Sorted Sets
-  Orig.ZaddOpts (..),
-  Orig.defaultZaddOpts,
-  zadd,
-  zaddOpts,
-  zcard,
-  zcount,
-  zincrby,
-  Orig.Aggregate (..),
-  zinterstore,
-  zinterstoreWeights,
-  zlexcount,
-  zrange,
-  zrangeWithscores,
-  Orig.RangeLex (..),
-  zrangebylex,
-  zrangebylexLimit,
-  zrangebyscore,
-  zrangebyscoreWithscores,
-  zrangebyscoreLimit,
-  zrangebyscoreWithscoresLimit,
-  zrank,
-  zrem,
-  zremrangebylex,
-  zremrangebyrank,
-  zremrangebyscore,
-  zrevrange,
-  zrevrangeWithscores,
-  zrevrangebyscore,
-  zrevrangebyscoreWithscores,
-  zrevrangebyscoreLimit,
-  zrevrangebyscoreWithscoresLimit,
-  zrevrank,
-  zscan,
-  zscanOpts,
-  zscore,
-  zunionstore,
-  zunionstoreWeights,
-
-  -- ** Strings
-  append,
-  bitcount,
-  bitcountRange,
-  bitopAnd,
-  bitopOr,
-  bitopXor,
-  bitopNot,
-  bitpos,
-  decr,
-  decrby,
-  get,
-  getbit,
-  getrange,
-  getset,
-  incr,
-  incrby,
-  incrbyfloat,
-  mget,
-  mset,
-  msetnx,
-  psetex,
-  Orig.Condition (..),
-  Orig.SetOpts (..),
-  set,
-  setOpts,
-  setbit,
-  setex,
-  setnx,
-  setrange,
-  strlen,
-
-  -- ** Streams
-  Orig.XReadOpts (..),
-  Orig.defaultXreadOpts,
-  Orig.XReadResponse (..),
-  Orig.StreamsRecord (..),
-  Orig.TrimOpts (..),
-  xadd,
-  xaddOpts,
-  xread,
-  xreadOpts,
-  xreadGroup,
-  xreadGroupOpts,
-  xack,
-  xgroupCreate,
-  xgroupSetId,
-  xgroupDestroy,
-  xgroupDelConsumer,
-  xrange,
-  xrevRange,
-  xlen,
-  Orig.XPendingSummaryResponse (..),
-  xpendingSummary,
-  Orig.XPendingDetailRecord (..),
-  xpendingDetail,
-  Orig.XClaimOpts (..),
-  Orig.defaultXClaimOpts,
-  xclaim,
-  xclaimJustIds,
-  Orig.XInfoConsumersResponse (..),
-  xinfoConsumers,
-  Orig.XInfoGroupsResponse (..),
-  xinfoGroups,
-  Orig.XInfoStreamResponse (..),
-  xinfoStream,
-  xdel,
-  xtrim,
-  Orig.inf,
-  Orig.ClusterNodesResponse (..),
-  Orig.ClusterNodesResponseEntry (..),
-  Orig.ClusterNodesResponseSlotSpec (..),
-  clusterNodes,
-  Orig.ClusterSlotsResponse (..),
-  Orig.ClusterSlotsResponseEntry (..),
-  Orig.ClusterSlotsNode (..),
-  clusterSlots,
-  clusterSetSlotNode,
-  clusterSetSlotStable,
-  clusterSetSlotImporting,
-  clusterSetSlotMigrating,
-  clusterGetKeysInSlot,
-
-  -- * Transactions
-  watch,
-  unwatch,
-  multiExec,
-  Orig.Queued (),
-  Orig.TxResult (..),
-  Orig.RedisTx (),
-
-  -- * Pub\/Sub
-  publish,
-
-  -- ** Subscribing to channels
-  -- $pubsubexpl
-
-  -- *** Single-thread Pub/Sub
-  pubSub,
-  Orig.Message (..),
-  Orig.PubSub (),
-  Orig.subscribe,
-  Orig.unsubscribe,
-  Orig.psubscribe,
-  Orig.punsubscribe,
-
-  -- *** Continuous Pub/Sub message controller
-  pubSubForever,
-  pubSubForever',
-  Orig.RedisChannel,
-  Orig.RedisPChannel,
-  Orig.MessageCallback,
-  Orig.PMessageCallback,
-  Orig.PubSubController,
-  Orig.newPubSubController,
-  Orig.currentChannels,
-  Orig.currentPChannels,
-  Orig.addChannels,
-  Orig.addChannelsAndWait,
-  Orig.removeChannels,
-  Orig.removeChannelsAndWait,
-  Orig.UnregisterCallbacksAction,
-
-  -- * Low-Level Command API
-  sendRequest,
-  Orig.Reply (..),
-  Orig.Status (..),
-  Orig.RedisResult (..),
-  Orig.ConnectionLostException (..),
-  Orig.ConnectTimeout (..),
-  Orig.HashSlot,
-  Orig.keyToSlot,
+  appendHooksToConnectionInfo,
 ) where
 
-import qualified Control.Exception.Safe as E
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Control.Monad.Reader (MonadReader (), ReaderT (ReaderT, runReaderT))
 import Data.ByteString (ByteString)
-import qualified Data.HashMap.Strict as H
-import Data.IP (IP)
-import Data.String (IsString (fromString))
+import Data.Function ((&))
+import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
+import Data.Version (showVersion)
 import qualified Database.Redis as Orig
-import GHC.Stack (HasCallStack)
-import OpenTelemetry.Instrumentation.Hedis.Internal.Action
-import OpenTelemetry.Instrumentation.Hedis.Internal.Wrapper (wrap0, wrap1, wrap2)
-import qualified OpenTelemetry.Trace.Core as Otel (Attribute, SpanArguments (attributes, kind), SpanKind (Client), Tracer, TracerProvider, defaultSpanArguments, getGlobalTracerProvider, inSpan, makeTracer, tracerOptions)
-import qualified OpenTelemetry.Trace.Monad as Otel (MonadTracer, TracerT (TracerT))
-import Text.Read (readMaybe)
+import GHC.Stack (HasCallStack, withFrozenCallStack)
+import qualified OpenTelemetry.Attributes as Otel (emptyAttributes)
+import qualified OpenTelemetry.Attributes.Map as Otel
+import qualified OpenTelemetry.SemanticConventions as Otel
+import qualified OpenTelemetry.Trace.Core as Otel
+import Paths_hs_opentelemetry_instrumentation_hedis (version)
 
 
-#if MIN_VERSION_hedis(0, 15, 1)
-import Control.Monad.IO.Unlift (MonadUnliftIO)
-#else
-import Control.Monad.IO.Unlift (MonadUnliftIO (withRunInIO))
-import qualified Database.Redis.Core.Internal as Orig
-#endif
-
-
-data Connection = Connection {connectInfo :: Orig.ConnectInfo, originalConnection :: Orig.Connection}
-
-
-{- | A wrapper data type with 'Otel.Tracer'.
-@m@ is expected to be 'Orig.Redis' or 'Orig.RedisTx'.
--}
-newtype Redis m a
-  = Redis (ReaderT Otel.Tracer m a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadUnliftIO, MonadFail, MonadReader Otel.Tracer)
-  deriving (Otel.MonadTracer) via (Otel.TracerT Otel.Tracer m)
-
-#if !MIN_VERSION_hedis(0, 15, 1)
-instance {-# OVERLAPPING #-} MonadUnliftIO (Redis Orig.Redis) where
-  withRunInIO inner =
-    Redis $ ReaderT $ \tracer -> Orig.Redis $ ReaderT $ \env ->
-      inner $ flip runReaderT env . (\(Orig.Redis m) -> m) . flip runReaderT tracer . (\(Redis m) -> m)
-#endif
-
-
-{- | Note: @'Redis' 'Orig.RedisTx'@ cannot be an instance of 'Orig.MonadRedis'
- because 'Orig.RedisTx' is not an instance of 'MonadUnliftIO'.
--}
-instance Orig.MonadRedis (Redis Orig.Redis) where
-  liftRedis = lift
-
-
-instance Orig.RedisCtx (Redis Orig.Redis) (Either Orig.Reply) where
-  returnDecode = lift . Orig.returnDecode
-
-
-lift :: m a -> Redis m a
-lift r = Redis $ ReaderT $ const r
-
-
--- | A function wrapping 'Orig.runRedis' with 'Otel.Tracer' using 'Otel.getGlobalTracerProvider'.
-runRedis :: (MonadUnliftIO m, HasCallStack) => Connection -> Redis Orig.Redis a -> m a
-runRedis conn m = do
-  tp <- Otel.getGlobalTracerProvider
-  runRedis' tp conn m
-
-
--- | A version of an explicit parameter for 'runRedis'.
-runRedis' :: (MonadUnliftIO m, HasCallStack) => Otel.TracerProvider -> Connection -> Redis Orig.Redis a -> m a
-runRedis' tp Connection {originalConnection, connectInfo} (Redis m) = do
-  let tracer = makeTracer tp
-  inSpan tracer "runRedis'" connectInfo $ liftIO $ Orig.runRedis originalConnection $ runReaderT m tracer
-
-
--- | A function wrapping 'Orig.connect' with 'Otel.Tracer' using 'Otel.getGlobalTracerProvider'.
-connect :: (MonadUnliftIO m, HasCallStack) => Orig.ConnectInfo -> m Connection
-connect info = do
-  tp <- Otel.getGlobalTracerProvider
-  connect' tp info
-
-
--- | A version of an explicit parameter for 'connect'.
-connect' :: (MonadUnliftIO m, HasCallStack) => Otel.TracerProvider -> Orig.ConnectInfo -> m Connection
-connect' tp info = do
-  let tracer = makeTracer tp
-  doConnect tracer info
-
-
-doConnect :: (MonadUnliftIO m, HasCallStack) => Otel.Tracer -> Orig.ConnectInfo -> m Connection
-doConnect tracer info = inSpan tracer "doConnect" info $ liftIO $ Connection info <$> Orig.connect info
-
-
--- | A function wrapping 'Orig.checkedConnect' with 'Otel.Tracer' using 'Otel.getGlobalTracerProvider'.
-checkedConnect :: (MonadUnliftIO m, HasCallStack) => Orig.ConnectInfo -> m Connection
-checkedConnect info = do
-  tp <- Otel.getGlobalTracerProvider
-  checkedConnect' tp info
-
-
--- | A version of an explicit parameter for 'checkedConnect'.
-checkedConnect' :: (MonadUnliftIO m, HasCallStack) => Otel.TracerProvider -> Orig.ConnectInfo -> m Connection
-checkedConnect' tp info = do
-  let tracer = makeTracer tp
-  doCheckedConnect tracer info
-
-
-doCheckedConnect :: (MonadUnliftIO m, HasCallStack) => Otel.Tracer -> Orig.ConnectInfo -> m Connection
-doCheckedConnect tracer info = inSpan tracer "doCheckedConnect" info $ liftIO $ Connection info <$> Orig.checkedConnect info
-
-
--- | A function wrapping 'Orig.disconnect' with 'Otel.Tracer' using 'Otel.getGlobalTracerProvider'.
-disconnect :: (MonadUnliftIO m, HasCallStack) => Connection -> m ()
-disconnect conn = do
-  tp <- Otel.getGlobalTracerProvider
-  disconnect' tp conn
-
-
--- | A version of an explicit parameter for 'disconnect'.
-disconnect' :: (MonadUnliftIO m, HasCallStack) => Otel.TracerProvider -> Connection -> m ()
-disconnect' tp conn = do
-  let tracer = makeTracer tp
-  doDisconnect tracer conn
-
-
-doDisconnect :: (MonadUnliftIO m, HasCallStack) => Otel.Tracer -> Connection -> m ()
-doDisconnect tracer Connection {originalConnection, connectInfo} = inSpan tracer "doDisconnect" connectInfo $ liftIO $ Orig.disconnect originalConnection
-
-
--- | A function wrapping 'Orig.withConnect' with 'Otel.Tracer' using 'Otel.getGlobalTracerProvider'.
-withConnect :: (E.MonadMask m, MonadUnliftIO m, HasCallStack) => Orig.ConnectInfo -> (Orig.Connection -> m c) -> m c
-withConnect info action = do
-  tp <- Otel.getGlobalTracerProvider
-  withConnect' tp info action
-
-
--- | A version of an explicit parameter for 'withConnect'.
-withConnect' :: (E.MonadMask m, MonadUnliftIO m, HasCallStack) => Otel.TracerProvider -> Orig.ConnectInfo -> (Orig.Connection -> m c) -> m c
-withConnect' tp info action = do
-  let tracer = makeTracer tp
-  inSpan tracer "withConnect'" info $ E.bracket (doConnect tracer info) (doDisconnect tracer) $ \(Connection {originalConnection}) -> action originalConnection
-
-
--- | A function wrapping 'Orig.withCheckedConnect' with 'Otel.Tracer' using 'Otel.getGlobalTracerProvider'.
-withCheckedConnect :: (E.MonadMask m, MonadUnliftIO m, HasCallStack) => Orig.ConnectInfo -> (Orig.Connection -> m c) -> m c
-withCheckedConnect info action = do
-  tp <- Otel.getGlobalTracerProvider
-  withCheckedConnect' tp info action
-
-
--- | A version of an explicit parameter for 'withCheckedConnect'.
-withCheckedConnect' :: (E.MonadMask m, MonadUnliftIO m, HasCallStack) => Otel.TracerProvider -> Orig.ConnectInfo -> (Orig.Connection -> m c) -> m c
-withCheckedConnect' tp info action = do
-  let tracer = makeTracer tp
-  inSpan tracer "withConnect'" info $ E.bracket (doCheckedConnect tracer info) (doDisconnect tracer) $ \(Connection {originalConnection}) -> action originalConnection
-
-
-watch :: [ByteString] -> Redis Orig.Redis (Either Orig.Reply Orig.Status)
-watch = wrap1 "watch" $ lift . Orig.watch
-
-
-unwatch :: Redis Orig.Redis (Either Orig.Reply Orig.Status)
-unwatch = wrap0 "unwatch" $ lift Orig.unwatch
-
-
-multiExec :: Redis Orig.RedisTx (Orig.Queued a) -> Redis Orig.Redis (Orig.TxResult a)
-multiExec (Redis m) = wrap0 "multiExec" $ Redis $ ReaderT $ Orig.multiExec . runReaderT m
-
-
-pubSub :: Orig.PubSub -> (Orig.Message -> IO Orig.PubSub) -> Redis Orig.Redis ()
-pubSub = wrap2 "pubSub" $ \sub f -> lift $ Orig.pubSub sub f
-
-
--- | A function wrapping 'Orig.pubSubForever' with 'Otel.Tracer' using 'Otel.getGlobalTracerProvider'.
-pubSubForever :: Connection -> Orig.PubSubController -> IO () -> IO ()
-pubSubForever connection controller action = do
-  tp <- Otel.getGlobalTracerProvider
-  pubSubForever' tp connection controller action
-
-
--- | A version of an explicit parameter for 'pubSubForever'.
-pubSubForever' :: Otel.TracerProvider -> Connection -> Orig.PubSubController -> IO () -> IO ()
-pubSubForever' tp Connection {originalConnection, connectInfo} controller action = do
-  let tracer = makeTracer tp
-  inSpan tracer "pubSubForever'" connectInfo $ Orig.pubSubForever originalConnection controller action
-
-
-makeTracer :: Otel.TracerProvider -> Otel.Tracer
-makeTracer tp = Otel.makeTracer tp "hs-opentelemetry-instrumentation-hedis" Otel.tracerOptions
-
-
-inSpan :: (MonadUnliftIO m, HasCallStack) => Otel.Tracer -> Text -> Orig.ConnectInfo -> m a -> m a
-inSpan tracer name info f = do
-  let args = Otel.defaultSpanArguments {Otel.kind = Otel.Client, Otel.attributes = makeAttributes info}
-  Otel.inSpan tracer name args f
-
-
-makeAttributes :: Orig.ConnectInfo -> H.HashMap Text Otel.Attribute
-makeAttributes info@Orig.ConnInfo {Orig.connectHost, Orig.connectPort} =
+appendHooksToConnectionInfo :: (MonadIO m, HasCallStack) => Otel.TracerProvider -> Orig.ConnectInfo -> m Orig.ConnectInfo
+appendHooksToConnectionInfo tracerProvider connectInfo@Orig.ConnInfo {Orig.connectHooks} = withFrozenCallStack $ liftIO $ do
   let
-    transportAttr :: Otel.Attribute
-    portAttr :: (Text, Otel.Attribute)
-    (transportAttr, portAttr) =
+    tracer =
+      Otel.makeTracer
+        tracerProvider
+        (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-hedis" (Text.pack $ showVersion version) "" Otel.emptyAttributes)
+        Otel.tracerOptions
+  pure
+    connectInfo
+      { Orig.connectHooks =
+          connectHooks
+            { Orig.sendRequestHook = sendDatabaseOrPubSubHook tracer connectInfo . Orig.sendRequestHook connectHooks
+            , Orig.sendPubSubHook = sendDatabaseOrPubSubHook tracer connectInfo . Orig.sendPubSubHook connectHooks
+            , Orig.callbackHook = callbackHook tracer connectInfo . Orig.callbackHook connectHooks
+            }
+      }
+
+
+sendDatabaseOrPubSubHook :: HasCallStack => Otel.Tracer -> Orig.ConnectInfo -> ([ByteString] -> IO a) -> [ByteString] -> IO a
+sendDatabaseOrPubSubHook tracer connectInfo send message@[command, channel, _] | elem command ["PUBLISH", "SPUBLISH"] = do
+  let spanName = decodeBs channel <> " publish"
+      kind = Otel.Producer
+      attributes = makePubSubAttributes connectInfo $ Right message
+  Otel.inSpan tracer spanName Otel.defaultSpanArguments {Otel.kind, Otel.attributes} $ send message
+sendDatabaseOrPubSubHook _ _ send message@(command : _) | elem command pubSubCommands = send message
+sendDatabaseOrPubSubHook tracer connectInfo send message = do
+  let spanName = makeDatabaseSpanName message
+      attributes = makeDatabaseAttributes connectInfo message
+      kind = Otel.Client
+  Otel.inSpan tracer spanName Otel.defaultSpanArguments {Otel.kind, Otel.attributes} $ send message
+
+
+callbackHook :: HasCallStack => Otel.Tracer -> Orig.ConnectInfo -> (Orig.Message -> IO Orig.PubSub) -> Orig.Message -> IO Orig.PubSub
+callbackHook tracer connectInfo callback message = do
+  let spanName = decodeBs (Orig.msgChannel message) <> " deliver"
+      kind = Otel.Consumer
+      attributes = makePubSubAttributes connectInfo $ Left message
+  Otel.inSpan tracer spanName Otel.defaultSpanArguments {Otel.kind, Otel.attributes} $ callback message
+
+
+makeDatabaseSpanName :: HasCallStack => [ByteString] -> Text
+makeDatabaseSpanName (command : _) = decodeBs command
+makeDatabaseSpanName _ = error "unexpected"
+
+
+makeDatabaseAttributes :: Orig.ConnectInfo -> [ByteString] -> Otel.AttributeMap
+makeDatabaseAttributes Orig.ConnInfo {Orig.connectHost, Orig.connectPort, Orig.connectUsername, Orig.connectDatabase} request =
+  let
+    host :: Text
+    maybePort :: Maybe Int64
+    transport :: Text
+    (host, maybePort, transport) =
       case connectPort of
-        Orig.PortNumber n -> ("ip_tcp", ("net.peer.port", fromString $ show n))
-        Orig.UnixSocket p -> ("other", ("net.sock.peer.port", fromString p))
-  in
-    [ ("db.connection_string", fromString $ showsPrecConnectInfoMasked 0 info "")
-    , portAttr
-    , (("net.transport", transportAttr))
-    , ((maybe "net.peer.name" (const "net.sock.peer.addr") (readMaybe connectHost :: Maybe IP), fromString connectHost))
-    ]
+        Orig.PortNumber n -> (Text.pack connectHost, Just $ fromInteger $ toInteger n, "tcp")
+        Orig.UnixSocket s -> (Text.pack s, Nothing, "unix")
+    statement = Text.unwords $ (\s -> "'" <> s <> "'") . decodeBs <$> request
+   in
+    mempty
+      -- Database Client attributes
+      -- attributes to dissmiss: db.connection_string, network.type
+      & Otel.insertByKey Otel.db_instance_id host
+      & Otel.insertByKey Otel.db_system "redis"
+      & maybe id (Otel.insertByKey Otel.db_user . decodeBs) connectUsername
+      & Otel.insertByKey Otel.network_peer_address host
+      & maybe id (Otel.insertByKey Otel.network_peer_port) maybePort
+      & Otel.insertByKey Otel.network_transport transport
+      & Otel.insertByKey Otel.server_address host
+      & maybe id (Otel.insertByKey Otel.server_port) maybePort
+      -- Database Client Call-level attributes
+      -- attributes to dissmiss: db.name, db.operation
+      & Otel.insertByKey Otel.db_statement statement
+      -- Redis Call-level attributes
+      & Otel.insertByKey Otel.db_redis_databaseIndex (fromInteger connectDatabase)
 
 
-showsPrecConnectInfoMasked :: Int -> Orig.ConnectInfo -> ShowS
-showsPrecConnectInfoMasked d Orig.ConnInfo {Orig.connectHost, Orig.connectPort, Orig.connectAuth, Orig.connectDatabase, Orig.connectMaxConnections, Orig.connectMaxIdleTime, Orig.connectTimeout, Orig.connectTLSParams} =
-  showParen (d > 10) $
-    showString "ConnInfo {"
-      . (showString "connectHost = " . shows connectHost . showString ", ")
-      . (showString "connectPort = " . shows connectPort . showString ", ")
-      . (showString "connectAuth = " . maybe (shows (Nothing :: Maybe ())) (const $ showString "Just \"****\"") connectAuth . showString ", ")
-      . (showString "connectDatabase = " . shows connectDatabase . showString ", ")
-      . (showString "connectMaxConnections = " . shows connectMaxConnections . showString ", ")
-      . (showString "connectMaxIdleTime = " . shows connectMaxIdleTime . showString ", ")
-      . (showString "connectTimeout = " . shows connectTimeout . showString ", ")
-      . (showString "connectTLSParams = " . shows connectTLSParams)
-      . showString "}"
+makePubSubAttributes :: Orig.ConnectInfo -> Either Orig.Message [ByteString] -> Otel.AttributeMap
+makePubSubAttributes Orig.ConnInfo {Orig.connectHost, Orig.connectPort} message =
+  let
+    destination :: Text
+    operation :: Text
+    message' :: Text
+    maybePattern :: Maybe Text
+    (destination, operation, message', maybePattern) =
+      case message of
+        Right ["PUBLISH", channel, message''] -> (decodeBs channel, "publish", "'" <> decodeBs message'' <> "'", Nothing)
+        Right (command : _) -> error $ "unexpected command: " <> show command
+        Right [] -> error "unexpected"
+        Left Orig.Message {Orig.msgChannel, Orig.msgMessage} -> (decodeBs msgChannel, "deliver", "'" <> decodeBs msgMessage <> "'", Nothing)
+        Left Orig.PMessage {Orig.msgPattern, Orig.msgChannel, Orig.msgMessage} -> (decodeBs msgChannel, "deliver", "'" <> decodeBs msgMessage <> "'", Just $ decodeBs msgPattern)
+    host :: Text
+    maybePort :: Maybe Int64
+    transport :: Text
+    (host, maybePort, transport) =
+      case connectPort of
+        Orig.PortNumber n -> (Text.pack connectHost, Just $ fromInteger $ toInteger n, "tcp")
+        Orig.UnixSocket s -> (Text.pack s, Nothing, "unix")
+   in
+    mempty
+      -- Messaging attributes
+      -- attributes to dissmiss:
+      --   - messaging.batch.message_count
+      --   - messaging.client_id
+      --   - messaging.destination.template
+      --   - messaging.message.body.size
+      --   - messaging.message.conversation_id
+      --   - messaging.message.envelope.size
+      --   - messaging.message.id
+      --   - network.protocol.version
+      --   - network.type
+      & Otel.insertByKey Otel.messaging_destination_anonymous False
+      & Otel.insertByKey Otel.messaging_destination_name destination
+      & Otel.insertByKey Otel.messaging_destination_temporary False
+      & Otel.insertByKey Otel.messaging_operation operation
+      & Otel.insertByKey Otel.messaging_system "redis"
+      & Otel.insertByKey Otel.network_peer_address host
+      & maybe id (Otel.insertByKey Otel.network_peer_port) maybePort
+      & Otel.insertByKey Otel.network_protocol_name "redis"
+      & Otel.insertByKey Otel.network_transport transport
+      & Otel.insertByKey Otel.server_address host
+      & maybe id (Otel.insertByKey Otel.server_port) maybePort
+      -- Per-message attributes
+      & Otel.insert "messaging.message" (Otel.AttributeValue $ Otel.TextAttribute message')
+      & maybe id (Otel.insertByKey "messaging.redis.pattern" . Otel.AttributeValue . Otel.TextAttribute) maybePattern
+
+
+pubSubCommands :: [ByteString]
+pubSubCommands =
+  [ "SUBSCRIBE"
+  , "SSUBSCRIBE"
+  , "PSUBSCRIBE"
+  , "UNSUBSCRIBE"
+  , "SUNSUBSCRIBE"
+  , "PUNSUBSCRIBE"
+  ]
+
+
+decodeBs :: ByteString -> Text
+#if MIN_VERSION_text(2,0,0)
+decodeBs = Text.decodeUtf8Lenient
+#else
+decodeBs = Text.decodeLatin1
+#endif
