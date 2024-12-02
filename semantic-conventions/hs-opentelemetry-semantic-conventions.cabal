@@ -9,7 +9,7 @@ description:
   OpenTelemetry Semantic Conventions for Haskell is a library that is automatically generated
   based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.24.
 
-  This module's version A.B.X.Y means that A.B is the version of the original semantic-conventions,
+  This package's version A.B.X.Y means that A.B is the version of the original semantic-conventions,
   and X.Y is the version of this module.
 
 common common
