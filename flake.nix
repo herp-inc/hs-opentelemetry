@@ -1,7 +1,8 @@
 {
   description = "Haskell OpenTelemetry support.";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs?ref=26.05";
+    nixpkgs2311.url = "github:NixOS/nixpkgs?ref=23.11";
     flake-utils.url = "github:numtide/flake-utils";
     devenv.url = "github:cachix/devenv/v1.0.5";
     # Hack to avoid needing to use impure when loading the devenv root.
@@ -19,100 +20,36 @@
       flake = false;
     };
   };
-
-  outputs = inputs @ {
-    # devenv-root,
-    nixpkgs,
-    devenv,
-    flake-utils,
-    ...
-  }: let
-    inherit (nixpkgs) lib;
-    inherit
-      (import ./nix/matrix.nix)
-      supportedSystems
-      ;
-    ignoreGeneratedFiles = attrs:
-      {
-        excludes =
-          attrs.excludes
-          or []
-          ++ [
-            "^otlp/src/"
-            ".*\\.cabal$"
-          ];
-      }
-      // attrs;
-    pre-commit-hooks = {
-      # General hooks
-      end-of-file-fixer = ignoreGeneratedFiles {
-        enable = true;
-        excludes = [
-          ".*\\.l?hs$"
-          ".*\\.proto$"
-        ];
-      };
-      # Nix hooks
-      alejandra.enable = true;
-      deadnix.enable = true;
-      # Haskell hooks
-      fourmolu = ignoreGeneratedFiles {
-        enable = true;
-      };
-      hpack.enable = true;
-    };
-  in
-    {
-      lib = {
-        haskellOverlay = import ./nix/haskell-overlay.nix;
-      };
-    }
-    // flake-utils.lib.eachSystem supportedSystems (system: let
-      pkgs = import nixpkgs {inherit system;};
-      haskellPackageUtils = import ./nix/haskell-packages.nix {
-        inherit
-          lib
-          pkgs
-          ;
-      };
-      inherit (haskellPackageUtils) extendedPackageSetByGHCVersions;
-
-      mkShellForGHC = ghcVersion: let
-        myHaskellPackages = extendedPackageSetByGHCVersions.${ghcVersion};
+  outputs = { self, nixpkgs, nixpkgs2311, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+        compiler = "ghc96";
       in
-        devenv.lib.mkShell {
-          inherit inputs pkgs;
-          modules = [
-            ({...}: {
-              # devenv.root = let
-              #   devenvRootFileContent = builtins.readFile devenv-root.outPath;
-              # in
-              #   pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
-              packages = with pkgs; [
-                grpc
-                libffi
-                mysql80
-                openssl
-                pcre
-                postgresql
-                protobuf
-                zlib
-                zstd
-              ];
+      {
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            haskell.compiler.${compiler}
+            cabal-install
+            stack
+            hpack
 
-              dotenv.enable = true;
+            haskell.packages.${compiler}.implicit-hie
+            haskell.packages.${compiler}.haskell-language-server
+            haskell.packages.${compiler}.hspec-discover
+            haskell.packages.${compiler}.fourmolu
 
-              languages.haskell = {
-                enable = true;
-                package = myHaskellPackages.ghc.withHoogle (
-                  hpkgs:
-                    lib.attrVals (builtins.attrNames (haskellPackageUtils.localDevPackageDepsAsAttrSet myHaskellPackages)) hpkgs
-                );
-              };
-
-              pre-commit.hooks = pre-commit-hooks;
-            })
-            (import ./nix/devenv/otlp-protobuf-setup.nix)
+            awscli
+            grpc
+            libffi
+            mysql84
+            nixpkgs-fmt
+            openssl
+            pcre
+            postgresql.pg_config
+            stdenv
+            zlib
+            zstd
           ];
         };
     in {
