@@ -45,7 +45,7 @@ library
     , unordered-containers
     , vault
     , wai
-    , yesod-core
+    , yesod-core < 1.7
   default-language: Haskell2010
 
 test-suite hs-opentelemetry-instrumentation-yesod-test
