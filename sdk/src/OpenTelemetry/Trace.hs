@@ -175,13 +175,12 @@ import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context (Context)
-import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables, otlpExporter)
-import OpenTelemetry.Exporter.Span (SpanExporter)
-import OpenTelemetry.Processor.Batch.Span (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
-import OpenTelemetry.Processor.Span (SpanProcessor)
+import OpenTelemetry.Exporter (Exporter)
+import OpenTelemetry.Exporter.OTLP (loadExporterEnvironmentVariables, otlpExporter)
+import OpenTelemetry.Processor (Processor)
+import OpenTelemetry.Processor.Batch (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
-import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
 import OpenTelemetry.Resource
@@ -306,7 +305,6 @@ knownPropagators =
   , ("baggage", w3cBaggagePropagator)
   , ("b3", b3TraceContextPropagator)
   , ("b3multi", b3MultiTraceContextPropagator)
-  , ("datadog", datadogTraceContextPropagator)
   , ("jaeger", error "Jaeger not yet implemented")
   ]
 
@@ -338,7 +336,7 @@ initializeTracerProvider = do
   createTracerProvider processors opts
 
 
-getTracerProviderInitializationOptions :: IO ([SpanProcessor], TracerProviderOptions)
+getTracerProviderInitializationOptions :: IO ([Processor], TracerProviderOptions)
 getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' (mempty :: Resource 'Nothing)
 
 
@@ -346,7 +344,7 @@ getTracerProviderInitializationOptions = getTracerProviderInitializationOptions'
 
  @since 0.0.3.1
 -}
-getTracerProviderInitializationOptions' :: (ResourceMerge 'Nothing any ~ 'Nothing) => Resource any -> IO ([SpanProcessor], TracerProviderOptions)
+getTracerProviderInitializationOptions' :: (ResourceMerge 'Nothing any ~ 'Nothing) => Resource any -> IO ([Processor], TracerProviderOptions)
 getTracerProviderInitializationOptions' rs = do
   sampler <- detectSampler
   attrLimits <- detectAttributeLimits
@@ -458,7 +456,7 @@ detectSpanLimits =
     <*> readEnv "OTEL_LINK_ATTRIBUTE_COUNT_LIMIT"
 
 
-knownExporters :: [(T.Text, IO SpanExporter)]
+knownExporters :: [(T.Text, IO (Exporter ImmutableSpan))]
 knownExporters =
   [
     ( "otlp"
@@ -472,7 +470,7 @@ knownExporters =
 
 
 -- TODO, support multiple exporters
-detectExporters :: IO [SpanExporter]
+detectExporters :: IO [Exporter ImmutableSpan]
 detectExporters = do
   exportersInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_TRACES_EXPORTER"
   if exportersInEnv == Just ["none"]

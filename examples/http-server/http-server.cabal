@@ -15,6 +15,7 @@ executable http-server
                  hs-opentelemetry-sdk,
                  http-client,
                  http-types,
+                 text,
                  wai,
                  warp
   ghc-options: -Wall
