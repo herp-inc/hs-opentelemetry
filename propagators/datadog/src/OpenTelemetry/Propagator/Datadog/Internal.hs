@@ -26,26 +26,30 @@ import OpenTelemetry.Vendor.Datadog.Internal (indexByteArrayNbo)
 import System.IO.Unsafe (unsafeDupablePerformIO)
 
 
-newTraceIdFromHeader
-  :: ByteString
-  -- ^ ASCII text of 64-bit integer
-  -> ShortByteString
-  -- ^ 128-bit integer
+newTraceIdFromHeader ::
+  -- | ASCII text of 64-bit integer
+  ByteString ->
+  -- | 128-bit integer
+  ShortByteString
 newTraceIdFromHeader bs =
-  let w64 = readWord64BS bs
-      builder = BB.word64BE 0 <> BB.word64BE w64
-  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+  let
+    w64 = readWord64BS bs
+    builder = BB.word64BE 0 <> BB.word64BE w64
+   in
+    SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
 
 
-newSpanIdFromHeader
-  :: ByteString
-  -- ^ ASCII text of 64-bit integer
-  -> ShortByteString
-  -- ^ 64-bit integer
+newSpanIdFromHeader ::
+  -- | ASCII text of 64-bit integer
+  ByteString ->
+  -- | 64-bit integer
+  ShortByteString
 newSpanIdFromHeader bs =
-  let w64 = readWord64BS bs
-      builder = BB.word64BE w64
-  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+  let
+    w64 = readWord64BS bs
+    builder = BB.word64BE w64
+   in
+    SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
 
 
 readWord64BS :: ByteString -> Word64
@@ -69,24 +73,24 @@ asciiWord8ToWord8 :: Word8 -> Word8
 asciiWord8ToWord8 b = b - fromIntegral (C.ord '0')
 
 
-newHeaderFromTraceId
-  :: ShortByteString
-  -- ^ 128-bit integer
-  -> ByteString
-  -- ^ ASCII text of 64-bit integer
+newHeaderFromTraceId ::
+  -- | 128-bit integer
+  ShortByteString ->
+  -- | ASCII text of 64-bit integer
+  ByteString
 newHeaderFromTraceId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 1
-  in showWord64BS w64
+   in showWord64BS w64
 
 
-newHeaderFromSpanId
-  :: ShortByteString
-  -- ^ 64-bit integer
-  -> ByteString
-  -- ^ ASCII text of 64-bit integer
+newHeaderFromSpanId ::
+  -- | 64-bit integer
+  ShortByteString ->
+  -- | ASCII text of 64-bit integer
+  ByteString
 newHeaderFromSpanId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 0
-  in showWord64BS w64
+   in showWord64BS w64
 
 
 showWord64BS :: Word64 -> ByteString

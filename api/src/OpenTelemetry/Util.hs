@@ -49,9 +49,8 @@ import Data.Foldable
 import Data.Kind
 import qualified Data.Vector as V
 import Foreign.C (CInt (..))
-import GHC.Base (Addr#)
+import GHC.Base (ThreadId#)
 import GHC.Conc (ThreadId (ThreadId))
-import GHC.Exts (unsafeCoerce#)
 import GHC.Generics
 import VectorBuilder.Builder (Builder)
 import qualified VectorBuilder.Builder as Builder
@@ -84,12 +83,12 @@ instance (Constructor c) => HasConstructor (C1 c f) where
   genericConstrName x = conName x
 
 
-foreign import ccall unsafe "rts_getThreadId" c_getThreadId :: Addr# -> CInt
+foreign import ccall unsafe "rts_getThreadId" c_getThreadId :: ThreadId# -> CInt
 
 
 -- | Get an int representation of a thread id
 getThreadId :: ThreadId -> Int
-getThreadId (ThreadId tid#) = fromIntegral $ c_getThreadId (unsafeCoerce# tid#)
+getThreadId (ThreadId tid#) = fromIntegral (c_getThreadId tid#)
 {-# INLINE getThreadId #-}
 
 
@@ -103,21 +102,21 @@ data AppendOnlyBoundedCollection a = AppendOnlyBoundedCollection
 instance forall a. (Show a) => Show (AppendOnlyBoundedCollection a) where
   showsPrec d AppendOnlyBoundedCollection {collection = c, maxSize = m, dropped = r} =
     let vec = Builder.build c :: V.Vector a
-    in showParen (d > 10) $
-        showString "AppendOnlyBoundedCollection {collection = "
-          . shows vec
-          . showString ", maxSize = "
-          . shows m
-          . showString ", dropped = "
-          . shows r
-          . showString "}"
+     in showParen (d > 10) $
+          showString "AppendOnlyBoundedCollection {collection = "
+            . shows vec
+            . showString ", maxSize = "
+            . shows m
+            . showString ", dropped = "
+            . shows r
+            . showString "}"
 
 
 -- | Initialize a bounded collection that admits a maximum size
-emptyAppendOnlyBoundedCollection
-  :: Int
-  -- ^ Maximum size
-  -> AppendOnlyBoundedCollection a
+emptyAppendOnlyBoundedCollection ::
+  -- | Maximum size
+  Int ->
+  AppendOnlyBoundedCollection a
 emptyAppendOnlyBoundedCollection s = AppendOnlyBoundedCollection mempty s 0
 
 

@@ -4,6 +4,7 @@ name: hs-opentelemetry-instrumentation-hedis
 version: 0.0.0.0
 author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
+extra-source-files: functions.txt
 
 common common
   build-depends: base >= 4 && < 5
@@ -12,19 +13,29 @@ common common
     ghc-options: -Wcompat
   default-language: Haskell2010
 
+custom-setup
+  setup-depends:
+    base,
+    Cabal,
+    directory,
+    filepath
+
 library
   import: common
-  hs-source-dirs: src
+  hs-source-dirs: src, gen
   exposed-modules: OpenTelemetry.Instrumentation.Hedis
-  other-modules:
-      Paths_hs_opentelemetry_instrumentation_hedis
-  autogen-modules:
-      Paths_hs_opentelemetry_instrumentation_hedis
+  other-modules: OpenTelemetry.Instrumentation.Hedis.Internal.Action
+                 OpenTelemetry.Instrumentation.Hedis.Internal.Wrapper
+  autogen-modules: OpenTelemetry.Instrumentation.Hedis.Internal.Action
   build-depends: hs-opentelemetry-api,
-                 hs-opentelemetry-semantic-conventions,
                  hedis >= 0.14,
                  bytestring,
-                 text
+                 iproute,
+                 mtl,
+                 safe-exceptions,
+                 text,
+                 unliftio-core,
+                 unordered-containers
   ghc-options: -Wcompat
                -Wno-name-shadowing
   if impl(ghc >= 6.4)

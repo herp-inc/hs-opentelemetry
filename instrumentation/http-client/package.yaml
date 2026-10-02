@@ -35,7 +35,6 @@ library:
   - http-types
   - text
   - thread-local-storage
-  - unordered-containers
 
 tests:
   hs-opentelemetry-instrumentation-http-client-test:

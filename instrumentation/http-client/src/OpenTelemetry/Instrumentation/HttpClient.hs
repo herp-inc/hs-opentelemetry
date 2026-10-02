@@ -1,18 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-{- | Offer a few options for HTTP instrumentation
-
-- Add attributes via 'Request' and 'Response' to an existing span (Best)
-- Use internals to instrument a particular callsite using modifyRequest, modifyResponse (Next best)
-- Provide a middleware to pull from the thread-local state (okay)
-- Modify the global manager to pull from the thread-local state (least good, can't be helped sometimes)
-
-[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
-- "http" - to use the stable conventions
-- "http/dup" - to emit both the old and the stable conventions
-Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
--}
 module OpenTelemetry.Instrumentation.HttpClient (
   appendModifierToSettings,
 ) where
@@ -24,7 +12,6 @@ import Data.Bifunctor (bimap)
 import qualified Data.CaseInsensitive as CI
 import Data.Foldable (fold)
 import Data.Function ((&))
-import qualified Data.HashMap.Strict as H
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
 import Data.Monoid (Endo (Endo, appEndo))
@@ -36,7 +23,6 @@ import Data.Version (showVersion)
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified Network.HTTP.Client as Orig
 import qualified Network.HTTP.Types.Status as HT
-import qualified OpenTelemetry.Attributes as Otel (emptyAttributes)
 import qualified OpenTelemetry.Attributes.Map as Otel
 import qualified OpenTelemetry.Context.ThreadLocal as Otel
 import qualified OpenTelemetry.Propagator as Otel
@@ -51,7 +37,7 @@ appendModifierToSettings tracerProvider settings = withFrozenCallStack $ liftIO 
     tracer =
       Otel.makeTracer
         tracerProvider
-        (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-http-client" (Text.pack $ showVersion version) "" Otel.emptyAttributes)
+        (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-http-client" $ Text.pack $ showVersion version)
         Otel.tracerOptions
     managerModifyRequest = Orig.managerModifyRequest settings
     managerModifyResponse = Orig.managerModifyResponse settings
@@ -73,7 +59,7 @@ requestModifier tracer tls request = do
   case maybeSpan of
     Nothing -> do
       context <- Otel.getContext
-      let attributes = makeRequestAttributes request `H.union` Otel.callerAttributes
+      let attributes = makeRequestAttributes request
       span_ <- Otel.createSpan tracer context "request" Otel.defaultSpanArguments {Otel.kind = Otel.Client, Otel.attributes}
       writeIORef spanRef $ Just span_
       let propagator = Otel.getTracerProviderPropagators $ Otel.getTracerTracerProvider tracer
@@ -127,7 +113,7 @@ makeRequestAttributes request =
     port :: Int64
     port = fromIntegral $ Orig.port request
     url = Text.pack $ show $ Orig.getUri request
-  in
+   in
     mempty
       -- HTTP attributes
       -- attributes to dismiss: error.type, http.request.body.size, http.response.body.size, network.protocol.version
@@ -154,7 +140,7 @@ makeResponseAttributes response =
         <$> Orig.responseHeaders response
     statusCode :: Int64
     statusCode = fromIntegral $ HT.statusCode $ Orig.responseStatus response
-  in
+   in
     mempty
       & appEndo (fold $ Endo . (\(k, v) -> Otel.insertByKey (Otel.http_response_header k) v) <$> responseHeaders)
       & Otel.insertByKey Otel.http_response_statusCode statusCode

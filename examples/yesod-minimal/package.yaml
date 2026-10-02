@@ -35,4 +35,3 @@ executables:
     - hs-opentelemetry-instrumentation-yesod
     - hs-opentelemetry-propagator-w3c
     - hs-opentelemetry-sdk
-    ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N

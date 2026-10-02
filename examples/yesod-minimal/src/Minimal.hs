@@ -22,7 +22,6 @@ import Database.Persist.Sql
 import Database.Persist.Sql.Raw.QQ
 import Database.Persist.SqlBackend
 import Database.Persist.SqlBackend.SqlPoolHooks
-import GHC.Stack
 import Lens.Micro (lens)
 import Network.HTTP.Client
 import Network.HTTP.Types
@@ -30,13 +29,13 @@ import Network.Wai.Handler.Warp (run)
 import OpenTelemetry.Context (Context, HasContext (..))
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Exporter.OTLP.Span
+import OpenTelemetry.Exporter.OTLP
 import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
-import OpenTelemetry.Processor.Batch.Span
+import OpenTelemetry.Processor.Batch
 import OpenTelemetry.Propagator.W3CBaggage
 import OpenTelemetry.Propagator.W3CTraceContext
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
@@ -91,9 +90,9 @@ instance Yesod Minimal where
 instance YesodPersist Minimal where
   type YesodPersistBackend Minimal = SqlBackend
   runDB m = do
-    app <- getYesod
-    runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $
-      setAlterBackend defaultSqlPoolHooks $ \conn -> do
+    inSpan "yesod.runDB" defaultSpanArguments $ do
+      app <- getYesod
+      runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ setAlterBackend defaultSqlPoolHooks $ \conn -> do
         -- TODO, could probably not do this on each runDB call.
         staticAttrs <- case getSimpleConn conn of
           Nothing -> pure mempty
@@ -101,7 +100,7 @@ instance YesodPersist Minimal where
         wrapSqlBackend staticAttrs conn
 
 
-getRootR :: (HasCallStack) => Handler Text
+getRootR :: Handler Text
 getRootR = do
   -- Wouldn't put this here in a real app
   tracerProvider <- getGlobalTracerProvider
@@ -113,7 +112,7 @@ getRootR = do
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 
-getApiR :: (HasCallStack) => Handler Text
+getApiR :: Handler Text
 getApiR = do
   inSpan "annotatedFunction" defaultSpanArguments $ do
     res <- runDB $ do

@@ -4,9 +4,9 @@ import Control.Monad (void)
 import Data.Text (Text, unpack)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
-import OpenTelemetry.Exporter.Handle.Span
-import OpenTelemetry.Instrumentation.Hspec (instrumentSpec, wrapSpec)
-import OpenTelemetry.Processor.Batch.Span
+import OpenTelemetry.Exporter.Handle
+import OpenTelemetry.Instrumentation.Hspec (wrapSpec)
+import OpenTelemetry.Processor.Batch
 import OpenTelemetry.Trace hiding (inSpan)
 import qualified OpenTelemetry.Trace as Trace
 import OpenTelemetry.Trace.Core (getSpanContext)
@@ -77,10 +77,8 @@ main = do
 
 runTests :: IO ()
 runTests = do
-  tp <- getGlobalTracerProvider
-  let tracer = makeTracer tp "hspec-example" tracerOptions
-  ctxt <- getContext
+  wrapper <- wrapSpec
   hspecWith
     defaultConfig
-    $ instrumentSpec tracer ctxt (parallel Spec.spec)
+    $ wrapper (parallel Spec.spec)
   putStrLn "Done"
