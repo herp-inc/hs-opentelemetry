@@ -1,9 +1,3 @@
-### herp-inc/hs-opentelemetry の運用
-
-https://scrapbox.io/herp-inc/hs-opentelemetry
-
----
-
 <p align="center">
   <a href="https://github.com/sponsors/iand675">
     <img alt="Support Haskell OpenTelemetry development" src="https://img.shields.io/github/sponsors/iand675?label=support%20development&logo=haskell&style=for-the-badge">
