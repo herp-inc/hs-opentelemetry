@@ -41,19 +41,20 @@ library
     , http-client
     , http-types
     , text
-    , thread-local-storage
   default-language: Haskell2010
 
 test-suite hs-opentelemetry-instrumentation-http-client-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
-  other-modules:
-      Paths_hs_opentelemetry_instrumentation_http_client
-  autogen-modules:
-      Paths_hs_opentelemetry_instrumentation_http_client
   hs-source-dirs:
       test
-  ghc-options: -Wunused-packages -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wunused-packages -threaded -rtsopts -with-rtsopts=-T
   build-depends:
-      base >=4.7 && <5
+      async
+    , base >=4.7 && <5
+    , bytestring
+    , hs-opentelemetry-api
+    , hs-opentelemetry-instrumentation-http-client
+    , http-client
+    , network
   default-language: Haskell2010

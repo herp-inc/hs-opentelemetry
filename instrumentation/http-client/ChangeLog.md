@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+- HTTP client instrumentation no longer retains finished threads
+
 ### Breaking changes
 
 - Use `HashMap Text Attribute` instead of `[(Text, Attribute)]` as attributes

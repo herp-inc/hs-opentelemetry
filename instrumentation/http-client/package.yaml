@@ -34,7 +34,6 @@ library:
   - http-client
   - http-types
   - text
-  - thread-local-storage
 
 tests:
   hs-opentelemetry-instrumentation-http-client-test:
@@ -43,4 +42,11 @@ tests:
     ghc-options:
     - -threaded
     - -rtsopts
-    - -with-rtsopts=-N
+    - -with-rtsopts=-T
+    dependencies:
+    - async
+    - bytestring
+    - hs-opentelemetry-api
+    - hs-opentelemetry-instrumentation-http-client
+    - http-client
+    - network

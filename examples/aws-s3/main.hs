@@ -37,7 +37,7 @@ main =
     $ \tracerProvider -> runResourceT $ do
       let tracer = makeTracer tracerProvider "aws-s3-example" tracerOptions
       bytes <- inSpan tracer "main" defaultSpanArguments $ do
-        httpClient <- liftIO . HTTP.newManager =<< appendModifierToSettings tracerProvider HTTP.defaultManagerSettings
+        httpClient <- liftIO . HTTP.newManager =<< appendTraceHeadersToSettings tracerProvider HTTP.defaultManagerSettings
         awsEnv@Amazonka.Env {Amazonka.Env.overrides} <- Amazonka.discover =<< Amazonka.newEnvNoAuthFromManager httpClient
         awsEnv' <- appendHooksToEnv tracerProvider awsEnv
         let awsEnv'' = awsEnv' {Amazonka.Env.overrides = overridesServiceForLocalstack . overrides}

@@ -2,20 +2,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module OpenTelemetry.Instrumentation.HttpClient (
-  appendModifierToSettings,
+  appendTraceHeadersToSettings,
+  withHttpSpan,
 ) where
 
-import Control.Exception (assert)
-import Control.Monad ((>=>))
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Bifunctor (bimap)
 import qualified Data.CaseInsensitive as CI
 import Data.Foldable (fold)
 import Data.Function ((&))
-import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
 import Data.Monoid (Endo (Endo, appEndo))
-import qualified Data.TLS.GHC as TLS
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
@@ -31,58 +28,61 @@ import qualified OpenTelemetry.Trace.Core as Otel
 import Paths_hs_opentelemetry_instrumentation_http_client (version)
 
 
-appendModifierToSettings :: (MonadIO m, HasCallStack) => Otel.TracerProvider -> Orig.ManagerSettings -> m Orig.ManagerSettings
-appendModifierToSettings tracerProvider settings = withFrozenCallStack $ liftIO $ do
+{- | Add trace headers taken from the current context to every request.
+
+The modifier does not start a span and does not store anything per thread.
+Use 'withHttpSpan' around the call that should become a span.
+-}
+appendTraceHeadersToSettings ::
+  (MonadIO m) =>
+  Otel.TracerProvider ->
+  Orig.ManagerSettings ->
+  m Orig.ManagerSettings
+appendTraceHeadersToSettings tracerProvider settings = liftIO $ do
   let
-    tracer =
-      Otel.makeTracer
-        tracerProvider
-        (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-http-client" $ Text.pack $ showVersion version)
-        Otel.tracerOptions
+    propagator = Otel.getTracerProviderPropagators tracerProvider
     managerModifyRequest = Orig.managerModifyRequest settings
-    managerModifyResponse = Orig.managerModifyResponse settings
-  tls <- makeThreadLocalStorage
   pure
     settings
-      { Orig.managerModifyRequest = requestModifier tracer tls >=> managerModifyRequest
-      , Orig.managerModifyResponse = managerModifyResponse >=> responseModifier tls
+      { Orig.managerModifyRequest = \request -> do
+          context <- Otel.getContext
+          headers <- Otel.injector propagator context $ Orig.requestHeaders request
+          managerModifyRequest request {Orig.requestHeaders = headers}
       }
 
 
-type ThreadLocalStorage = TLS.TLS (IORef (Maybe Otel.Span))
+{- | Run one HTTP call in a client span.
+
+The span records the request attributes before the action runs, and the
+response attributes when the action returns a response. The span is ended
+if the action throws.
+-}
+withHttpSpan ::
+  (HasCallStack) =>
+  Otel.TracerProvider ->
+  Orig.Request ->
+  IO (Orig.Response body) ->
+  IO (Orig.Response body)
+withHttpSpan tracerProvider request action = withFrozenCallStack $ do
+  let
+    tracer = makeTracer tracerProvider
+    arguments =
+      Otel.defaultSpanArguments
+        { Otel.kind = Otel.Client
+        , Otel.attributes = makeRequestAttributes request
+        }
+  Otel.inSpan' tracer "request" arguments $ \span_ -> do
+    response <- action
+    Otel.addAttributes span_ $ makeResponseAttributes response
+    pure response
 
 
-requestModifier :: HasCallStack => Otel.Tracer -> ThreadLocalStorage -> Orig.Request -> IO Orig.Request
-requestModifier tracer tls request = do
-  spanRef <- TLS.getTLS tls
-  maybeSpan <- readIORef spanRef
-  case maybeSpan of
-    Nothing -> do
-      context <- Otel.getContext
-      let attributes = makeRequestAttributes request
-      span_ <- Otel.createSpan tracer context "request" Otel.defaultSpanArguments {Otel.kind = Otel.Client, Otel.attributes}
-      writeIORef spanRef $ Just span_
-      let propagator = Otel.getTracerProviderPropagators $ Otel.getTracerTracerProvider tracer
-      headers <- Otel.injector propagator context $ Orig.requestHeaders request
-      pure request {Orig.requestHeaders = headers}
-    Just _ -> pure request
-
-
-responseModifier :: HasCallStack => ThreadLocalStorage -> Orig.Response Orig.BodyReader -> IO (Orig.Response Orig.BodyReader)
-responseModifier tls response = do
-  spanRef <- TLS.getTLS tls
-  maybeSpan <- readIORef spanRef
-  case maybeSpan of
-    Just span_ -> do
-      Otel.addAttributes span_ $ makeResponseAttributes response
-      Otel.endSpan span_ Nothing
-      writeIORef spanRef Nothing
-    Nothing -> assert False $ pure () -- something went wrong
-  pure response
-
-
-makeThreadLocalStorage :: IO ThreadLocalStorage
-makeThreadLocalStorage = TLS.mkTLS $ newIORef Nothing
+makeTracer :: Otel.TracerProvider -> Otel.Tracer
+makeTracer tracerProvider =
+  Otel.makeTracer
+    tracerProvider
+    (Otel.InstrumentationLibrary "hs-opentelemetry-instrumentation-http-client" $ Text.pack $ showVersion version)
+    Otel.tracerOptions
 
 
 makeRequestAttributes :: Orig.Request -> Otel.AttributeMap
