@@ -71,6 +71,7 @@ library
       OverloadedStrings
       RecordWildCards
   ghc-options: -Wunused-packages -Wall
+  ld-options: -Wl,--no-gc-sections
   build-depends:
       async
     , attoparsec

@@ -8,6 +8,7 @@
 - List `Paths_hs_opentelemetry_api` in `other-modules` so the shared library exports it
 - Depend on `text` from the api test suite. The logs tests import it
 - Add an `Eq` instance for `MaterializedResources` so the logs tests can compare it
+- Link the api shared library with `--no-gc-sections` so `ExportResult` stays exported
 
 ### Breaking changes
 
