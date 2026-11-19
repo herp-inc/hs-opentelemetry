@@ -104,11 +104,11 @@ getRootR :: Handler Text
 getRootR = do
   -- Wouldn't put this here in a real app
   tracerProvider <- getGlobalTracerProvider
-  managerSettings <- appendModifierToSettings tracerProvider defaultManagerSettings
+  managerSettings <- appendTraceHeadersToSettings tracerProvider defaultManagerSettings
   m <- inSpan "initialize http manager" defaultSpanArguments $ do
     liftIO $ newManager managerSettings
   req <- parseUrlThrow "http://localhost:3000/api"
-  resp <- liftIO $ httpLbs req m
+  resp <- liftIO $ withHttpSpan tracerProvider req $ httpLbs req m
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 
