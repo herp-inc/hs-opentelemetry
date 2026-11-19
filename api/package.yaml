@@ -37,7 +37,17 @@ library:
   ld-options: -Wl,--no-gc-sections
   other-modules:
   - OpenTelemetry.Context.Types
+  - OpenTelemetry.Contrib.CarryOns
+  - OpenTelemetry.Contrib.SpanTraversals
+  - OpenTelemetry.Exporter.LogRecord
+  - OpenTelemetry.Internal.Common.Types
+  - OpenTelemetry.Internal.Logs.Core
+  - OpenTelemetry.Internal.Logs.Types
   - OpenTelemetry.Internal.Trace.Types
+  - OpenTelemetry.LogAttributes
+  - OpenTelemetry.Logs.Core
+  - OpenTelemetry.Processor.LogRecord
+  - OpenTelemetry.SemanticsConfig
   - Paths_hs_opentelemetry_api
   dependencies:
   - async

@@ -9,6 +9,7 @@
 - Depend on `text` from the api test suite. The logs tests import it
 - Add an `Eq` instance for `MaterializedResources` so the logs tests can compare it
 - Link the api shared library with `--no-gc-sections` so `ExportResult` stays exported
+- List the api modules missing from the cabal file, including `OpenTelemetry.Internal.Common.Types`, so the shared library contains them
 
 ### Breaking changes
 
