@@ -7,6 +7,7 @@
 - Restore `SpanProcessor` and `SpanExporter`, and keep the old `Processor` and `Exporter` names as patterns. `ShutdownResult` and `ExportResult` live only in `OpenTelemetry.Internal.Common.Types`
 - List `Paths_hs_opentelemetry_api` in `other-modules` so the shared library exports it
 - Depend on `text` from the api test suite. The logs tests import it
+- Add an `Eq` instance for `MaterializedResources` so the logs tests can compare it
 
 ### Breaking changes
 
