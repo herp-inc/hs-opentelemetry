@@ -6,6 +6,7 @@
 - Depend on `safe-exceptions` and `transformers` directly. `SemanticsConfig` and the logs API import them
 - Restore `SpanProcessor` and `SpanExporter`, and keep the old `Processor` and `Exporter` names as patterns. `ShutdownResult` and `ExportResult` live only in `OpenTelemetry.Internal.Common.Types`
 - List `Paths_hs_opentelemetry_api` in `other-modules` so the shared library exports it
+- Depend on `text` from the api test suite. The logs tests import it
 
 ### Breaking changes
 

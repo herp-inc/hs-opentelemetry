@@ -115,6 +115,7 @@ test-suite hs-opentelemetry-api-test
     , hs-opentelemetry-api
     , hspec
     , mtl
+    , text
     , unliftio-core
     , unordered-containers
     , vector
