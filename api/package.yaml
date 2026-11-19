@@ -34,9 +34,17 @@ dependencies:
 library:
   source-dirs: src
   ghc-options: -Wall
+  ld-options: -Wl,--no-gc-sections
   other-modules:
   - OpenTelemetry.Context.Types
+  - OpenTelemetry.Contrib.CarryOns
+  - OpenTelemetry.Contrib.SpanTraversals
+  - OpenTelemetry.Exporter.LogRecord
+  - OpenTelemetry.Internal.Common.Types
+  - OpenTelemetry.Internal.Logs.Core
   - OpenTelemetry.Internal.Trace.Types
+  - OpenTelemetry.Processor.LogRecord
+  - Paths_hs_opentelemetry_api
   dependencies:
   - async
   - attoparsec
@@ -48,9 +56,11 @@ library:
   - hashable
   - http-types
   - memory
+  - safe-exceptions
   - template-haskell
   - text
   - thread-utils-context == 0.2.*
+  - transformers
   - vault
 
 tests:
@@ -64,5 +74,9 @@ tests:
     dependencies:
     - hs-opentelemetry-api
     - hspec
+    - mtl
+    - text
+    - unliftio-core
+    - unordered-containers
     - vector
     - vector-builder

@@ -36,9 +36,14 @@ library
       OpenTelemetry.Context
       OpenTelemetry.Context.ThreadLocal
       OpenTelemetry.Exporter
+      OpenTelemetry.Exporter.Span
+      OpenTelemetry.Internal.Logs.Types
       OpenTelemetry.Internal.Trace.Id
+      OpenTelemetry.LogAttributes
       OpenTelemetry.Logging.Core
+      OpenTelemetry.Logs.Core
       OpenTelemetry.Processor
+      OpenTelemetry.Processor.Span
       OpenTelemetry.Propagator
       OpenTelemetry.Resource
       OpenTelemetry.Resource.Cloud
@@ -53,6 +58,7 @@ library
       OpenTelemetry.Resource.Service
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
+      OpenTelemetry.SemanticsConfig
       OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.Id.Generator
@@ -63,13 +69,21 @@ library
       OpenTelemetry.Util
   other-modules:
       OpenTelemetry.Context.Types
+      OpenTelemetry.Contrib.CarryOns
+      OpenTelemetry.Contrib.SpanTraversals
+      OpenTelemetry.Exporter.LogRecord
+      OpenTelemetry.Internal.Common.Types
+      OpenTelemetry.Internal.Logs.Core
       OpenTelemetry.Internal.Trace.Types
+      OpenTelemetry.Processor.LogRecord
+      Paths_hs_opentelemetry_api
   hs-source-dirs:
       src
   default-extensions:
       OverloadedStrings
       RecordWildCards
   ghc-options: -Wunused-packages -Wall
+  ld-options: -Wl,--no-gc-sections
   build-depends:
       async
     , attoparsec
@@ -83,9 +97,11 @@ library
     , http-types
     , memory
     , mtl
+    , safe-exceptions
     , template-haskell
     , text
     , thread-utils-context ==0.2.*
+    , transformers
     , unliftio-core
     , unordered-containers
     , vault
@@ -112,6 +128,7 @@ test-suite hs-opentelemetry-api-test
     , hs-opentelemetry-api
     , hspec
     , mtl
+    , text
     , unliftio-core
     , unordered-containers
     , vector
