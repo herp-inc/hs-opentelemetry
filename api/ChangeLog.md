@@ -2,6 +2,11 @@
 
 ## Unreleased changes
 
+- Add `Ord` and `Hashable` instances for `Attributes`, so `InstrumentationLibrary` builds on GHC 9.2
+- Depend on `safe-exceptions` and `transformers` directly. `SemanticsConfig` and the logs API import them
+- Restore `SpanProcessor` and `SpanExporter`, and keep the old `Processor` and `Exporter` names as patterns. `ShutdownResult` and `ExportResult` live only in `OpenTelemetry.Internal.Common.Types`
+- List `Paths_hs_opentelemetry_api` in `other-modules` so the shared library exports it
+
 ### Breaking changes
 
 - Use `HashMap Text Attribute` instead of `[(Text, Attribute)]` as attributes

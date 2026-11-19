@@ -64,6 +64,7 @@ library
   other-modules:
       OpenTelemetry.Context.Types
       OpenTelemetry.Internal.Trace.Types
+      Paths_hs_opentelemetry_api
   hs-source-dirs:
       src
   default-extensions:
@@ -83,9 +84,11 @@ library
     , http-types
     , memory
     , mtl
+    , safe-exceptions
     , template-haskell
     , text
     , thread-utils-context ==0.2.*
+    , transformers
     , unliftio-core
     , unordered-containers
     , vault

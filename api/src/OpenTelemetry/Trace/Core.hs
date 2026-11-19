@@ -288,7 +288,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                     , spanTracer = t
                     }
             s <- newIORef is
-            eResult <- try $ mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
+            eResult <- try $ mapM_ (\processor -> spanProcessorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
             case eResult of
               Left err -> print (err :: SomeException)
               Right _ -> pure ()
@@ -556,7 +556,7 @@ endSpan (Span s) mts = liftIO $ do
     let ref = i {spanEnd = spanEnd i <|> Just ts}
      in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
-    eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
+    eResult <- try $ mapM_ (`spanProcessorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
     case eResult of
       Left err -> print (err :: SomeException)
       Right _ -> pure ()
@@ -713,7 +713,7 @@ emptyTracerProviderOptions =
 
  You should generally use 'getGlobalTracerProvider' for most applications.
 -}
-createTracerProvider :: (MonadIO m) => [Processor] -> TracerProviderOptions -> m TracerProvider
+createTracerProvider :: (MonadIO m) => [SpanProcessor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   let g = tracerProviderOptionsIdGenerator opts
   pure $
@@ -831,7 +831,7 @@ defaultSpanArguments = def
 shutdownTracerProvider :: (MonadIO m) => TracerProvider -> m ()
 shutdownTracerProvider TracerProvider {..} = liftIO $ do
   asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
-    processorShutdown processor
+    spanProcessorShutdown processor
   mapM_ wait asyncShutdownResults
 
 
@@ -847,7 +847,7 @@ forceFlushTracerProvider ::
   m FlushResult
 forceFlushTracerProvider TracerProvider {..} mtimeout = liftIO $ do
   jobs <- forM tracerProviderProcessors $ \processor -> async $ do
-    processorForceFlush processor
+    spanProcessorForceFlush processor
   mresult <-
     timeout (fromMaybe 5_000_000 mtimeout) $
       foldM

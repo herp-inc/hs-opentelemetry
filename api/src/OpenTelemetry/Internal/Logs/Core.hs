@@ -122,13 +122,13 @@ shutdownLoggerProvider LoggerProvider {loggerProviderProcessors} = liftIO $ do
 {- | This method provides a way for provider to immediately export all @LogRecord@s that have not yet
  been exported for all the internal processors.
 -}
-forceFlushLoggerProvider
-  :: (MonadIO m)
-  => LoggerProvider
-  -> Maybe Int
-  -- ^ Optional timeout in microseconds, defaults to 5,000,000 (5s)
-  -> m FlushResult
-  -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
+forceFlushLoggerProvider ::
+  (MonadIO m) =>
+  LoggerProvider ->
+  -- | Optional timeout in microseconds, defaults to 5,000,000 (5s)
+  Maybe Int ->
+  -- | Result that denotes whether the flush action succeeded, failed, or timed out.
+  m FlushResult
 forceFlushLoggerProvider LoggerProvider {loggerProviderProcessors} mtimeout = liftIO $ do
   jobs <- V.forM loggerProviderProcessors $ \processor -> async $ do
     logRecordProcessorForceFlush processor
@@ -148,20 +148,20 @@ forceFlushLoggerProvider LoggerProvider {loggerProviderProcessors} mtimeout = li
     Just res -> pure res
 
 
-makeLogger
-  :: LoggerProvider
-  -- ^ The @LoggerProvider@ holds the configuration for the @Logger@.
-  -> InstrumentationLibrary
-  -- ^ The library that the @Logger@ instruments. This uniquely identifies the @Logger@.
-  -> Logger
+makeLogger ::
+  -- | The @LoggerProvider@ holds the configuration for the @Logger@.
+  LoggerProvider ->
+  -- | The library that the @Logger@ instruments. This uniquely identifies the @Logger@.
+  InstrumentationLibrary ->
+  Logger
 makeLogger loggerLoggerProvider loggerInstrumentationScope = Logger {..}
 
 
-createImmutableLogRecord
-  :: (MonadIO m)
-  => LA.AttributeLimits
-  -> LogRecordArguments
-  -> m ImmutableLogRecord
+createImmutableLogRecord ::
+  (MonadIO m) =>
+  LA.AttributeLimits ->
+  LogRecordArguments ->
+  m ImmutableLogRecord
 createImmutableLogRecord attributeLimits LogRecordArguments {..} = do
   currentTimestamp <- getCurrentTimestamp
   let logRecordObservedTimestamp = fromMaybe currentTimestamp observedTimestamp
@@ -225,11 +225,11 @@ If context is not specified in LogRecordArguments it will default to the current
 The emitted @LogRecord@ will be passed to any @LogRecordProcessor@s registered on the @LoggerProvider@
 that created the @Logger@.
 -}
-emitLogRecord
-  :: (MonadIO m)
-  => Logger
-  -> LogRecordArguments
-  -> m ReadWriteLogRecord
+emitLogRecord ::
+  (MonadIO m) =>
+  Logger ->
+  LogRecordArguments ->
+  m ReadWriteLogRecord
 emitLogRecord l args = do
   let LoggerProvider {loggerProviderProcessors, loggerProviderAttributeLimits} = loggerLoggerProvider l
 
@@ -265,19 +265,19 @@ Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetr
 addAttribute :: (IsReadWriteLogRecord r, MonadIO m, ToValue a) => r -> Text -> a -> m ()
 addAttribute lr k v =
   let attributeLimits = readLogRecordAttributeLimits lr
-  in liftIO $
-      modifyLogRecord
-        lr
-        ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
-            ilr
-              { logRecordAttributes =
-                  LA.addAttribute
-                    attributeLimits
-                    logRecordAttributes
-                    k
-                    v
-              }
-        )
+   in liftIO $
+        modifyLogRecord
+          lr
+          ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
+              ilr
+                { logRecordAttributes =
+                    LA.addAttribute
+                      attributeLimits
+                      logRecordAttributes
+                      k
+                      v
+                }
+          )
 
 
 {- | A convenience function related to 'addAttribute' that adds multiple attributes to a @LogRecord@ at the same time.
@@ -289,18 +289,18 @@ This is not an atomic modification
 addAttributes :: (IsReadWriteLogRecord r, MonadIO m, ToValue a) => r -> HashMap Text a -> m ()
 addAttributes lr attrs =
   let attributeLimits = readLogRecordAttributeLimits lr
-  in liftIO $
-      modifyLogRecord
-        lr
-        ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
-            ilr
-              { logRecordAttributes =
-                  LA.addAttributes
-                    attributeLimits
-                    logRecordAttributes
-                    attrs
-              }
-        )
+   in liftIO $
+        modifyLogRecord
+          lr
+          ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
+              ilr
+                { logRecordAttributes =
+                    LA.addAttributes
+                      attributeLimits
+                      logRecordAttributes
+                      attrs
+                }
+          )
 
 
 {- | This can be useful for pulling data for attributes and

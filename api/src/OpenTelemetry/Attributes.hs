@@ -89,7 +89,8 @@ data Attributes = Attributes
   , attributesCount :: {-# UNPACK #-} !Int
   , attributesDropped :: {-# UNPACK #-} !Int
   }
-  deriving stock (Show, Eq)
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (Hashable)
 
 
 instance Default Attributes where
